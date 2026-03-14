@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { RoleProvider } from '../context/RoleContext';
+import { theme } from '../constants/theme';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -51,10 +52,14 @@ function RootLayoutNav() {
     <RoleProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="register" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="ride/[id]" options={{ title: 'Confirmação', headerTitleAlign: 'center', headerTintColor: '#1A237E' }} />
-          <Stack.Screen name="admin/dashboard" options={{ title: 'Painel Admin', headerTitleAlign: 'center', headerTintColor: '#1A237E' }} />
+          <Stack.Screen name="ride/[id]" options={{ title: 'Confirmação', headerTitleAlign: 'center', headerTintColor: theme.colors.primary }} />
+          <Stack.Screen name="admin/dashboard" options={{ title: 'Painel Admin', headerTitleAlign: 'center', headerTintColor: theme.colors.primary }} />
+          <Stack.Screen name="admin/approvals" options={{ title: 'Aprovar Motoristas', headerTitleAlign: 'center', headerTintColor: theme.colors.primary }} />
         </Stack>
       </ThemeProvider>
     </RoleProvider>

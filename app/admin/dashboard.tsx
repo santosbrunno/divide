@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { TrendingUp, Users, MapPin, DollarSign } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { TrendingUp, Users, MapPin, DollarSign, LogOut } from 'lucide-react-native';
 import { theme } from '../../constants/theme';
 import api from '../../services/api';
+import { useRole } from '../../context/RoleContext';
 
 export default function AdminDashboard() {
+  const router = useRouter();
+  const { user, setRole, setUser } = useRole();
   const [loading, setLoading] = useState(true);
   const [faturamento, setFaturamento] = useState<number>(0);
+  const [taxas, setTaxas] = useState<any[]>([]);
+  const [stats, setStats] = useState({ users: 0, regions: 'Santa Catarina' });
 
   useEffect(() => {
     fetchFaturamento();
@@ -15,13 +21,26 @@ export default function AdminDashboard() {
   const fetchFaturamento = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/admin/faturamento');
-      setFaturamento(response.data.total_faturamento);
+      const [faturamentoRes, taxasRes, pendentesRes] = await Promise.all([
+        api.get('/admin/faturamento'),
+        api.get('/admin/taxas-recentes'),
+        api.get('/admin/motoristas/pendentes')
+      ]);
+      
+      setFaturamento(faturamentoRes.data.total_faturamento);
+      setTaxas(taxasRes.data);
+      setStats(prev => ({ ...prev, users: pendentesRes.data.length }));
     } catch (error) {
-      console.error('Erro ao buscar faturamento:', error);
+      console.error('Erro ao buscar dados do dashboard:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    setRole('passenger');
+    setUser(null);
+    router.replace('/login');
   };
 
   if (loading) {
@@ -34,7 +53,17 @@ export default function AdminDashboard() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <Text style={styles.title}>Relatório de Lucros</Text>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Painel de Controle</Text>
+          <Text style={styles.subtitle}>Olá, {user?.nome || 'Admin'}</Text>
+        </View>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <LogOut size={20} color={theme.colors.error} />
+        </TouchableOpacity>
+      </View>
+      
+      <Text style={styles.sectionTitle}>Relatório de Lucros</Text>
       
       <View style={styles.card}>
         <View style={styles.cardHeader}>
@@ -46,11 +75,14 @@ export default function AdminDashboard() {
       </View>
 
       <View style={styles.grid}>
-        <View style={styles.smallCard}>
+        <TouchableOpacity 
+          style={styles.smallCard}
+          onPress={() => router.push('/admin/approvals')}
+        >
           <Users size={18} color={theme.colors.primary} />
-          <Text style={styles.smallValue}>124</Text>
-          <Text style={styles.smallLabel}>Novos Usuários</Text>
-        </View>
+          <Text style={styles.smallValue}>Aprovar</Text>
+          <Text style={styles.smallLabel}>Motoristas</Text>
+        </TouchableOpacity>
         <View style={styles.smallCard}>
           <MapPin size={18} color={theme.colors.primary} />
           <Text style={styles.smallValue}>Santa Catarina</Text>
@@ -60,18 +92,22 @@ export default function AdminDashboard() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Últimas Taxas Recebidas</Text>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <View key={i} style={styles.listItem}>
-            <View style={styles.itemIcon}>
-              <DollarSign size={16} color={theme.colors.secondary} />
+        {taxas.length === 0 ? (
+          <Text style={styles.emptyText}>Nenhuma taxa recebida ainda.</Text>
+        ) : (
+          taxas.map((item) => (
+            <View key={item.booking_id} style={styles.listItem}>
+              <View style={styles.itemIcon}>
+                <DollarSign size={16} color={theme.colors.secondary} />
+              </View>
+              <View style={styles.itemContent}>
+                <Text style={styles.itemTitle}>{item.passageiro}</Text>
+                <Text style={styles.itemSubtitle}>{item.origin_city} → {item.destination_city}</Text>
+              </View>
+              <Text style={styles.itemValue}>+ R$ {parseFloat(item.taxa_plataforma).toFixed(2).replace('.', ',')}</Text>
             </View>
-            <View style={styles.itemContent}>
-              <Text style={styles.itemTitle}>Taxa Viagem #{1024 + i}</Text>
-              <Text style={styles.itemSubtitle}>Pomerode → Blumenau</Text>
-            </View>
-            <Text style={styles.itemValue}>+ R$ {(Math.random() * 5 + 2).toFixed(2)}</Text>
-          </View>
-        ))}
+          ))
+        )}
       </View>
     </ScrollView>
   );
@@ -91,10 +127,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     color: theme.colors.primary,
-    marginBottom: theme.spacing.lg,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: theme.colors.gray,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  logoutButton: {
+    padding: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: theme.spacing.md,
+    color: theme.colors.text,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: theme.colors.gray,
+    marginTop: 20,
+    fontStyle: 'italic',
   },
   card: {
     backgroundColor: theme.colors.white,

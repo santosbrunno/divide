@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-nativ
 import { MapPin, Clock, Car, User, AlertCircle, DollarSign } from 'lucide-react-native';
 import { theme } from '../../constants/theme';
 import api from '../../services/api';
+import { useRole } from '../../context/RoleContext';
 
 interface Booking {
   booking_id: number;
@@ -19,11 +20,11 @@ interface Booking {
 }
 
 export default function MyTripsScreen() {
+  const { user } = useRole();
   const [trips, setTrips] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ID mockado do passageiro logado (igual ao usado na reserva)
-  const PASSENGER_ID = 1; 
+  const PASSENGER_ID = user?.id || 0; 
 
   useEffect(() => {
     fetchMyTrips();

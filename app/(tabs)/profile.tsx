@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 import { User, Shield, Briefcase, ChevronRight, LogOut } from 'lucide-react-native';
 import { useRole, UserRole } from '../../context/RoleContext';
 import { theme } from '../../constants/theme';
 
 export default function ProfileScreen() {
-  const { role, setRole } = useRole();
+  const { role, setRole, user, setUser } = useRole();
+  const router = useRouter();
 
   const RoleOption = ({ targetRole, label, icon: Icon, description }: { 
     targetRole: UserRole, 
@@ -38,7 +40,7 @@ export default function ProfileScreen() {
           <User size={40} color={theme.colors.white} />
         </View>
         <View style={styles.headerText}>
-          <Text style={styles.userName}>Bruno Soares</Text>
+          <Text style={styles.userName}>{user?.nome || 'Usuário'}</Text>
           <Text style={styles.userRoleText}>
             Atuando como: {role.charAt(0).toUpperCase() + role.slice(1)}
           </Text>
@@ -59,12 +61,14 @@ export default function ProfileScreen() {
           icon={Briefcase} 
           description="Oferecer caronas e gerenciar suas rotas."
         />
-        <RoleOption 
-          targetRole="admin" 
-          label="Administrador" 
-          icon={Shield} 
-          description="Acompanhar lucros e estatísticas da plataforma."
-        />
+        {role === 'admin' && (
+          <RoleOption 
+            targetRole="admin" 
+            label="Administrador" 
+            icon={Shield} 
+            description="Acompanhar lucros e estatísticas da plataforma."
+          />
+        )}
       </View>
 
       <View style={styles.section}>
@@ -73,7 +77,14 @@ export default function ProfileScreen() {
           <Text style={styles.settingText}>Editar Perfil</Text>
           <ChevronRight size={20} color={theme.colors.gray} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.settingItem}>
+        <TouchableOpacity 
+          style={styles.settingItem} 
+          onPress={() => {
+            setUser(null);
+            setRole('passenger');
+            router.replace('/login');
+          }}
+        >
           <Text style={[styles.settingText, { color: theme.colors.error }]}>Sair da Conta</Text>
           <LogOut size={20} color={theme.colors.error} />
         </TouchableOpacity>
