@@ -3,14 +3,16 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, StatusBar
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AlertTriangle, CheckCircle, MapPin, Clock, User, ArrowLeft, Car } from 'lucide-react-native';
+import { AlertTriangle, CheckCircle, MapPin, Clock, User, ArrowLeft, MessageCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../constants/theme';
 import api from '../../services/api';
+import { useRole } from '../../context/RoleContext';
 
 export default function RideConfirmationScreen() {
   const { id, rideData } = useLocalSearchParams();
   const router = useRouter();
+  const { user, role } = useRole();
 
   let ride = null;
   try {
@@ -64,7 +66,7 @@ export default function RideConfirmationScreen() {
     try {
       await api.post('/reservar', {
         ride_id: ride.ride_id || ride.id,
-        passenger_id: 1,
+        passenger_id: user?.id || 1,
         preco_base: basePrice,
       });
       Alert.alert(
@@ -75,6 +77,20 @@ export default function RideConfirmationScreen() {
     } catch (error) {
       Alert.alert('Ops!', 'Parece que as vagas acabaram enquanto você decidia.');
     }
+  };
+
+  const handleOpenChat = () => {
+    const rideId   = ride.ride_id || ride.id;
+    const driverId = ride.driver_id;
+    if (!user?.id || !driverId) {
+      Alert.alert('Atenção', 'Faça login para usar o chat.');
+      return;
+    }
+    router.push(
+      `/chat/${rideId}?my_id=${user.id}&passenger_id=${user.id}&driver_id=${driverId}` +
+      `&other_name=${encodeURIComponent(ride.motorista || 'Motorista')}` +
+      `&destination=${encodeURIComponent(ride.destino || '')}`
+    );
   };
 
   const less24h = isLessThan24h();
@@ -171,6 +187,20 @@ export default function RideConfirmationScreen() {
             Cancelamentos feitos com menos de 24h de antecedência não dão direito ao reembolso da taxa de serviço (10%).
           </Text>
         </View>
+
+        {/* Chat Button — só para passageiros */}
+        {role === 'passenger' && (
+          <TouchableOpacity
+            onPress={handleOpenChat}
+            activeOpacity={0.85}
+            style={styles.chatButtonOuter}
+          >
+            <View style={styles.chatButton}>
+              <MessageCircle size={20} color={theme.colors.primary} />
+              <Text style={styles.chatButtonText}>Dúvidas? Fale com o motorista</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
       </ScrollView>
 
@@ -378,6 +408,26 @@ const styles = StyleSheet.create({
   },
   warningTextActive: {
     color: '#7B3800',
+  },
+  chatButtonOuter: {
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#F0F7F1',
+    borderRadius: 14,
+    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: '#C8E6C9',
+  },
+  chatButtonText: {
+    color: theme.colors.primary,
+    fontWeight: '700',
+    fontSize: 15,
   },
   footer: {
     backgroundColor: '#fff',

@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 
 interface Ride {
   ride_id: number;
+  driver_id: number;   // necessário para abrir o chat
   motorista: string;
   modelo: string;
   horario_partida: string;

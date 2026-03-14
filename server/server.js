@@ -288,4 +288,105 @@ app.patch('/admin/motoristas/:id/status', (req, res) => {
     });
 });
 
+// =============================================
+// CHAT - Sistema de Mensagens
+// =============================================
+
+// POST /messages — Enviar mensagem
+app.post('/messages', (req, res) => {
+    const { ride_id, sender_id, receiver_id, content } = req.body;
+    if (!ride_id || !sender_id || !receiver_id || !content?.trim()) {
+        return res.status(400).json({ error: 'Campos obrigatórios faltando.' });
+    }
+    const sql = "INSERT INTO messages (ride_id, sender_id, receiver_id, content) VALUES (?, ?, ?, ?)";
+    db.query(sql, [ride_id, sender_id, receiver_id, content.trim()], (err, result) => {
+        if (err) {
+            console.error('Erro ao enviar mensagem:', err);
+            return res.status(500).json(err);
+        }
+        // Retorna a mensagem completa com timestamp
+        const sqlGet = `
+            SELECT m.*, u.nome as sender_name 
+            FROM messages m JOIN users u ON m.sender_id = u.user_id
+            WHERE m.message_id = ?`;
+        db.query(sqlGet, [result.insertId], (err2, rows) => {
+            if (err2) return res.json({ message_id: result.insertId });
+            res.json(rows[0]);
+        });
+    });
+});
+
+// GET /messages/:ride_id/:passenger_id — Histórico de conversa
+app.get('/messages/:ride_id/:passenger_id', (req, res) => {
+    const { ride_id, passenger_id } = req.params;
+    const sql = `
+        SELECT m.*, u.nome as sender_name
+        FROM messages m
+        JOIN users u ON m.sender_id = u.user_id
+        WHERE m.ride_id = ?
+          AND (m.sender_id = ? OR m.receiver_id = ?)
+        ORDER BY m.timestamp ASC
+    `;
+    db.query(sql, [ride_id, passenger_id, passenger_id], (err, results) => {
+        if (err) {
+            console.error('Erro ao buscar mensagens:', err);
+            return res.status(500).json(err);
+        }
+        // Marcar mensagens como lidas para o receiver atual
+        db.query(
+            "UPDATE messages SET is_read = TRUE WHERE ride_id = ? AND receiver_id = ? AND is_read = FALSE",
+            [ride_id, passenger_id]
+        );
+        res.json(results);
+    });
+});
+
+// GET /chats/driver/:driver_id — Lista de conversas de um motorista
+app.get('/chats/driver/:driver_id', (req, res) => {
+    const driver_id = req.params.driver_id;
+    const sql = `
+        SELECT
+            m.ride_id,
+            r.origem,
+            r.destino,
+            p.user_id  AS passenger_id,
+            p.nome     AS passenger_name,
+            MAX(m.timestamp) AS last_time,
+            (
+                SELECT content FROM messages
+                WHERE ride_id = m.ride_id
+                  AND (sender_id = p.user_id OR receiver_id = p.user_id)
+                ORDER BY timestamp DESC LIMIT 1
+            ) AS last_message,
+            SUM(m.receiver_id = ? AND m.is_read = FALSE) AS unread_count
+        FROM messages m
+        JOIN rides r ON m.ride_id = r.ride_id
+        JOIN users p ON p.user_id = IF(m.sender_id = ?, m.receiver_id, m.sender_id)
+        WHERE r.driver_id = ?
+          AND p.tipo_perfil = 'passenger'
+        GROUP BY m.ride_id, p.user_id, r.origem, r.destino
+        ORDER BY last_time DESC
+    `;
+    db.query(sql, [driver_id, driver_id, driver_id], (err, results) => {
+        if (err) {
+            console.error('Erro ao buscar conversas do motorista:', err);
+            return res.status(500).json(err);
+        }
+        res.json(results);
+    });
+});
+
+// PUT /messages/read — Marcar mensagens de uma conversa como lidas
+app.put('/messages/read', (req, res) => {
+    const { ride_id, reader_id } = req.body;
+    db.query(
+        "UPDATE messages SET is_read = TRUE WHERE ride_id = ? AND receiver_id = ? AND is_read = FALSE",
+        [ride_id, reader_id],
+        (err) => {
+            if (err) return res.status(500).json(err);
+            res.json({ ok: true });
+        }
+    );
+});
+
 app.listen(3000, () => console.log("Servidor rodando na porta 3000"));
