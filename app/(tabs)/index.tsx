@@ -1,10 +1,11 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  StyleSheet,
   SafeAreaView,
-  StatusBar
+  StatusBar,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRole } from '../../context/RoleContext';
@@ -16,29 +17,43 @@ import { AdminDashboard } from '../../components/AdminDashboard';
 export default function HomeScreen() {
   const { role, user } = useRole();
 
+  const getRoleBadge = () => {
+    if (role === 'driver') return { label: '🚗 Motorista', colors: ['#E67E22', '#D35400'] as [string, string] };
+    if (role === 'admin') return { label: '⚙️ Admin', colors: ['#D4AF37', '#B8860B'] as [string, string] };
+    return { label: '🧭 Passageiro', colors: ['#2980B9', '#1A5276'] as [string, string] };
+  };
+
+  const badge = getRoleBadge();
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
-      
+      <StatusBar barStyle="light-content" backgroundColor="#0F2417" />
+
+      {/* Header */}
       {user && (
         <LinearGradient
-          colors={theme.gradients.header as [string, string, ...string[]]}
+          colors={['#0F2417', '#1B3A20', '#2D5A27']}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.greetingContainer}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
         >
-          <View>
+          <View style={styles.headerLeft}>
             <Text style={styles.greetingLabel}>Bem-vindo,</Text>
-            <Text style={styles.greetingText}>{user.nome}!</Text>
+            <Text style={styles.greetingName} numberOfLines={1}>{user.nome} 👋</Text>
           </View>
-          <LinearGradient
-             colors={theme.gradients.badge as [string, string, ...string[]]}
-             style={styles.roleBadge}
-          >
-             <Text style={styles.roleBadgeText}>
-                {role === 'driver' ? 'Motorista' : role === 'passenger' ? 'Passageiro' : 'Admin'}
-             </Text>
-          </LinearGradient>
+          <View style={styles.headerRight}>
+            <LinearGradient
+              colors={badge.colors}
+              style={styles.roleBadge}
+            >
+              <Text style={styles.roleBadgeText}>{badge.label}</Text>
+            </LinearGradient>
+            <Image
+              source={require('../../assets/images/divide_logo.png')}
+              style={styles.logoSmall}
+              resizeMode="contain"
+            />
+          </View>
         </LinearGradient>
       )}
 
@@ -54,40 +69,56 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F5F7F6',
   },
-  greetingContainer: {
-    padding: theme.spacing.lg,
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    elevation: 8,
-    shadowColor: '#2D5A27',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingTop: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    elevation: 10,
+    shadowColor: '#0F2417',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+    gap: 8,
   },
   greetingLabel: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.65)',
+    fontWeight: '400',
   },
-  greetingText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.white,
+  greetingName: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: -0.3,
   },
   roleBadge: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
+    paddingVertical: 5,
+    borderRadius: 20,
   },
   roleBadgeText: {
-    color: theme.colors.white,
+    color: '#fff',
     fontSize: 12,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  logoSmall: {
+    width: 70,
+    height: 36,
+    opacity: 0.85,
   },
   content: {
     flex: 1,

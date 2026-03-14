@@ -1,27 +1,34 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, StatusBar
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AlertTriangle, CheckCircle, MapPin, Clock, User, ArrowRight } from 'lucide-react-native';
+import { AlertTriangle, CheckCircle, MapPin, Clock, User, ArrowLeft, Car } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../constants/theme';
 import api from '../../services/api';
 
 export default function RideConfirmationScreen() {
   const { id, rideData } = useLocalSearchParams();
   const router = useRouter();
-  
+
   let ride = null;
   try {
     if (rideData) {
       ride = JSON.parse(decodeURIComponent(rideData as string));
     }
   } catch (error) {
-    console.warn("Failed to parse rideData from params", error);
+    console.warn('Failed to parse rideData from params', error);
   }
 
   if (!ride) {
     return (
       <View style={styles.errorContainer}>
-        <Text>Dados da carona não encontrados.</Text>
+        <Text style={styles.errorEmoji}>😕</Text>
+        <Text style={styles.errorTitle}>Carona não encontrada</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={styles.backBtnText}>Voltar</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -30,28 +37,38 @@ export default function RideConfirmationScreen() {
   const taxaServico = basePrice * 0.10;
   const valorTotal = basePrice + taxaServico;
 
-  const isLessThanh24h = () => {
+  const isLessThan24h = () => {
     try {
       const departureDate = new Date(ride.horario_partida);
       const now = new Date();
       const differenceInMs = departureDate.getTime() - now.getTime();
-      const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
-      return differenceInMs < twentyFourHoursInMs;
-    } catch (e) {
+      return differenceInMs < 24 * 60 * 60 * 1000;
+    } catch {
       return false;
+    }
+  };
+
+  const formatTime = (horario: string) => {
+    try {
+      const date = new Date(horario);
+      return date.toLocaleString('pt-BR', {
+        weekday: 'long', day: '2-digit', month: 'long',
+        hour: '2-digit', minute: '2-digit',
+      });
+    } catch {
+      return horario;
     }
   };
 
   const handleConfirmarReserva = async () => {
     try {
-      const response = await api.post('/reservar', {
-        ride_id: ride.ride_id || ride.id, // O backend espera o ride_id da tabela.
-        passenger_id: 1, // Por enquanto usamos o ID 1 para testes
-        preco_base: basePrice // Usando a variável segura convertida ao invés de ride.preco_base
+      await api.post('/reservar', {
+        ride_id: ride.ride_id || ride.id,
+        passenger_id: 1,
+        preco_base: basePrice,
       });
-
       Alert.alert(
-        'Sucesso!', 
+        '🎉 Reserva Confirmada!',
         `Sua carona para ${ride.destino} está garantida.`,
         [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
       );
@@ -60,192 +77,382 @@ export default function RideConfirmationScreen() {
     }
   };
 
+  const less24h = isLessThan24h();
+
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Resumo do Trajeto</Text>
-          <View style={styles.routeHeader}>
-            <View style={styles.locationContainer}>
-              <MapPin size={18} color={theme.colors.primary} />
-              <Text style={styles.locationText}>{ride.origem}</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" />
+
+      {/* Header */}
+      <LinearGradient colors={['#0F2417', '#2D5A27']} style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <ArrowLeft size={22} color="rgba(255,255,255,0.8)" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Confirmar Reserva</Text>
+        <View style={{ width: 34 }} />
+      </LinearGradient>
+
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+        {/* Route Card */}
+        <View style={styles.routeCard}>
+          <LinearGradient
+            colors={['#1B3A20', '#2D5A27']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.routeStrip}
+          >
+            <View style={styles.routeCity}>
+              <MapPin size={14} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.routeCityText}>{ride.origem}</Text>
             </View>
-            <ArrowRight size={18} color={theme.colors.gray} />
-            <View style={styles.locationContainer}>
-              <MapPin size={18} color={theme.colors.primary} />
-              <Text style={styles.locationText}>{ride.destino}</Text>
+            <View style={styles.routeArrowContainer}>
+              <View style={styles.routeDash} />
+              <Text style={styles.routeArrow}>→</Text>
+              <View style={styles.routeDash} />
             </View>
-          </View>
-          
+            <View style={styles.routeCity}>
+              <MapPin size={14} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.routeCityText}>{ride.destino}</Text>
+            </View>
+          </LinearGradient>
+
           <View style={styles.rideMeta}>
             <View style={styles.metaItem}>
-              <User size={16} color={theme.colors.gray} />
+              <User size={15} color={theme.colors.gray} />
               <Text style={styles.metaText}>{ride.motorista}</Text>
             </View>
+            <View style={styles.metaDivider} />
             <View style={styles.metaItem}>
-              <Clock size={16} color={theme.colors.gray} />
-              <Text style={styles.metaText}>{ride.horario_partida}</Text>
+              <Clock size={15} color={theme.colors.primary} />
+              <Text style={[styles.metaText, { color: theme.colors.primary }]}>
+                {formatTime(ride.horario_partida)}
+              </Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Custos da Viagem</Text>
+        {/* Cost Card */}
+        <View style={styles.costCard}>
+          <Text style={styles.costTitle}>💳 Resumo de Custos</Text>
+
           <View style={styles.costRow}>
-            <Text style={styles.costLabel}>Ajuda de custo do motorista</Text>
+            <View style={styles.costLabelRow}>
+              <View style={styles.costDot} />
+              <Text style={styles.costLabel}>Ajuda de custo ao motorista</Text>
+            </View>
             <Text style={styles.costValue}>R$ {basePrice.toFixed(2).replace('.', ',')}</Text>
           </View>
+
           <View style={styles.costRow}>
-            <Text style={styles.costLabel}>Taxa de serviço Divide (10%)</Text>
-            <Text style={styles.costValue}>R$ {taxaServico.toFixed(2).replace('.', ',')}</Text>
+            <View style={styles.costLabelRow}>
+              <View style={[styles.costDot, { backgroundColor: theme.colors.secondary }]} />
+              <Text style={styles.costLabel}>Taxa de serviço Divide (10%)</Text>
+            </View>
+            <Text style={[styles.costValue, { color: theme.colors.secondary }]}>
+              R$ {taxaServico.toFixed(2).replace('.', ',')}
+            </Text>
           </View>
+
+          <View style={styles.totalDivider} />
+
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total a Pagar</Text>
-            <Text style={styles.totalValue}>R$ {valorTotal.toFixed(2).replace('.', ',')}</Text>
+            <Text style={styles.totalValue}>
+              R$ {valorTotal.toFixed(2).replace('.', ',')}
+            </Text>
           </View>
         </View>
 
-        <View style={[styles.warningCard, isLessThanh24h() && styles.warningCardActive]}>
-          <AlertTriangle size={24} color={theme.colors.warningText} />
-          <Text style={styles.warningText}>
-            Atenção: Cancelamentos feitos com menos de 24h de antecedência da partida não dão direito ao reembolso da taxa de serviço (10%).
+        {/* Warning */}
+        <View style={[styles.warningCard, less24h && styles.warningCardActive]}>
+          <AlertTriangle size={20} color={less24h ? '#E65100' : '#BF8C00'} />
+          <Text style={[styles.warningText, less24h && styles.warningTextActive]}>
+            Cancelamentos feitos com menos de 24h de antecedência não dão direito ao reembolso da taxa de serviço (10%).
           </Text>
         </View>
+
       </ScrollView>
 
+      {/* Footer */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmarReserva}>
-          <CheckCircle size={20} color={theme.colors.white} />
-          <Text style={styles.confirmButtonText}>Confirmar e Pagar via Mercado Pago</Text>
+        <View style={styles.footerPriceRow}>
+          <Text style={styles.footerLabel}>Total</Text>
+          <Text style={styles.footerPrice}>R$ {valorTotal.toFixed(2).replace('.', ',')}</Text>
+        </View>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={handleConfirmarReserva}
+          style={styles.confirmOuter}
+        >
+          <LinearGradient
+            colors={['#E67E22', '#D35400']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.confirmButton}
+          >
+            <CheckCircle size={20} color="#fff" />
+            <Text style={styles.confirmButtonText}>Confirmar e Pagar</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F5F7F6',
   },
-  scrollContent: {
-    padding: theme.spacing.md,
-  },
-  section: {
-    backgroundColor: theme.colors.white,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
-    marginBottom: theme.spacing.md,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: theme.spacing.md,
-    color: theme.colors.text,
-  },
-  routeHeader: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  locationContainer: {
+  backButton: {
+    padding: 6,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: -0.2,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 20,
+  },
+  routeCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 14,
+    elevation: 4,
+    shadowColor: '#2D5A27',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+  },
+  routeStrip: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  routeCity: {
+    alignItems: 'center',
+    gap: 4,
     flex: 1,
   },
-  locationText: {
-    fontSize: 12,
-    marginTop: 4,
+  routeCityText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
     textAlign: 'center',
+  },
+  routeArrowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+  },
+  routeDash: {
+    height: 1,
+    width: 16,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  routeArrow: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 18,
   },
   rideMeta: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: theme.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    padding: 14,
+    gap: 10,
   },
   metaItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 13,
     color: theme.colors.gray,
+    flex: 1,
+  },
+  metaDivider: {
+    width: 1,
+    height: '100%',
+    backgroundColor: '#F0F4F1',
+  },
+  costCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 14,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+  },
+  costTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: theme.colors.text,
+    marginBottom: 16,
   },
   costRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  costLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  costDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.primary,
   },
   costLabel: {
+    fontSize: 14,
     color: theme.colors.gray,
+    flex: 1,
   },
   costValue: {
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  totalDivider: {
+    height: 1,
+    backgroundColor: '#F0F4F1',
+    marginVertical: 12,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 12,
-    marginTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  totalLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.secondary,
-  },
-  warningCard: {
-    backgroundColor: theme.colors.warning,
-    borderColor: theme.colors.warningBorder,
-    borderWidth: 1,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    flexDirection: 'row',
-    gap: 12,
     alignItems: 'center',
   },
+  totalLabel: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: theme.colors.text,
+  },
+  totalValue: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: theme.colors.primary,
+    letterSpacing: -0.5,
+  },
+  warningCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: '#FFFDE7',
+    borderRadius: 14,
+    padding: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: '#BF8C00',
+    marginBottom: 10,
+  },
   warningCardActive: {
-    borderWidth: 2,
-    borderColor: '#FAAD14',
+    backgroundColor: '#FFF3E0',
+    borderLeftColor: '#E65100',
   },
   warningText: {
     flex: 1,
     fontSize: 13,
-    color: theme.colors.warningText,
-    lineHeight: 18,
+    color: '#7B5800',
+    lineHeight: 19,
+  },
+  warningTextActive: {
+    color: '#7B3800',
   },
   footer: {
-    padding: theme.spacing.md,
+    backgroundColor: '#fff',
+    padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    backgroundColor: theme.colors.white,
+    borderTopColor: '#F0F4F1',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+  },
+  footerPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  footerLabel: {
+    fontSize: 14,
+    color: theme.colors.gray,
+    fontWeight: '600',
+  },
+  footerPrice: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: theme.colors.text,
+    letterSpacing: -0.5,
+  },
+  confirmOuter: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 6,
+    shadowColor: '#E67E22',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
   },
   confirmButton: {
-    backgroundColor: theme.colors.primary,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
+    paddingVertical: 16,
   },
   confirmButtonText: {
-    color: theme.colors.white,
-    fontWeight: 'bold',
+    color: '#fff',
+    fontWeight: '800',
     fontSize: 16,
+    letterSpacing: 0.3,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  }
+    backgroundColor: '#F5F7F6',
+    gap: 12,
+  },
+  errorEmoji: {
+    fontSize: 52,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  backBtn: {
+    marginTop: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 12,
+  },
+  backBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
 });

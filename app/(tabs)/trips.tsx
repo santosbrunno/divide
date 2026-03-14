@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
-import { MapPin, Clock, Car, User, AlertCircle, DollarSign } from 'lucide-react-native';
+import { MapPin, Clock, Car, User, AlertCircle, DollarSign, CheckCircle } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../constants/theme';
 import api from '../../services/api';
 import { useRole } from '../../context/RoleContext';
@@ -24,7 +25,7 @@ export default function MyTripsScreen() {
   const [trips, setTrips] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const PASSENGER_ID = user?.id || 0; 
+  const PASSENGER_ID = user?.id || 0;
 
   useEffect(() => {
     fetchMyTrips();
@@ -47,77 +48,135 @@ export default function MyTripsScreen() {
       const departureDate = new Date(horarioStr);
       const now = new Date();
       const differenceInMs = departureDate.getTime() - now.getTime();
-      return differenceInMs > 0 && differenceInMs < (24 * 60 * 60 * 1000);
+      return differenceInMs > 0 && differenceInMs < 24 * 60 * 60 * 1000;
     } catch (e) {
       return false;
     }
   };
 
+  const formatTime = (horario: string) => {
+    try {
+      const date = new Date(horario);
+      return date.toLocaleString('pt-BR', {
+        day: '2-digit', month: '2-digit',
+        hour: '2-digit', minute: '2-digit',
+      });
+    } catch {
+      return horario;
+    }
+  };
+
   const renderTripCard = ({ item }: { item: Booking }) => {
-    const isCloseToDeparture = isLessThan24h(item.horario_partida);
+    const isClose = isLessThan24h(item.horario_partida);
 
     return (
       <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.routeContainer}>
-            <MapPin size={16} color={theme.colors.primary} />
-            <Text style={styles.routeText}>{item.origem} → {item.destino}</Text>
+        {/* Route Strip */}
+        <LinearGradient
+          colors={['#0F2417', '#2D5A27']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.cardStrip}
+        >
+          <View style={styles.routeRow}>
+            <Text style={styles.routeCity} numberOfLines={1}>{item.origem}</Text>
+            <Text style={styles.routeArrow}>→</Text>
+            <Text style={styles.routeCity} numberOfLines={1}>{item.destino}</Text>
           </View>
-          <View style={[styles.statusBadge, isCloseToDeparture ? styles.statusWarningBadge : styles.statusSuccessBadge]}>
-            <Text style={[styles.statusText, isCloseToDeparture ? styles.statusWarningText : styles.statusSuccessText]}>
-              {isCloseToDeparture ? 'Menos de 24h' : 'Confirmada'}
+          <View style={[styles.statusBadge, isClose ? styles.statusWarning : styles.statusOk]}>
+            {isClose
+              ? <AlertCircle size={12} color="#fff" />
+              : <CheckCircle size={12} color="#fff" />
+            }
+            <Text style={styles.statusText}>
+              {isClose ? 'Menos de 24h' : 'Confirmada'}
             </Text>
           </View>
-        </View>
+        </LinearGradient>
 
-        <View style={styles.detailsRow}>
-          <User size={14} color={theme.colors.gray} />
-          <Text style={styles.detailsText}>{item.motorista}</Text>
-          <Car size={14} color={theme.colors.gray} style={{ marginLeft: 12 }} />
-          <Text style={styles.detailsText}>{item.carro}</Text>
-        </View>
-
-        <View style={styles.detailsRow}>
-          <Clock size={14} color={theme.colors.gray} />
-          <Text style={styles.detailsText}>{item.horario_partida}</Text>
-        </View>
-
-        <View style={styles.financeContainer}>
-          <Text style={styles.financeLabel}>Valor Pago:</Text>
-          <Text style={styles.totalPaid}>R$ {parseFloat(item.valor_pago).toFixed(2).replace('.', ',')}</Text>
-        </View>
-        
-        <View style={styles.feeContainer}>
-          <DollarSign size={14} color={theme.colors.secondary} />
-          <Text style={styles.feeText}>Taxa de Serviço: R$ {parseFloat(item.taxa_plataforma).toFixed(2).replace('.', ',')}</Text>
-        </View>
-
-        {isCloseToDeparture && (
-          <View style={styles.retentionWarning}>
-            <AlertCircle size={16} color={theme.colors.warningText} />
-            <Text style={styles.retentionText}>Período de retenção de taxa ativo</Text>
+        {/* Details */}
+        <View style={styles.cardBody}>
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailItem}>
+              <User size={14} color={theme.colors.gray} />
+              <Text style={styles.detailText}>{item.motorista}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Car size={14} color={theme.colors.gray} />
+              <Text style={styles.detailText}>{item.carro}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Clock size={14} color={theme.colors.primary} />
+              <Text style={[styles.detailText, { color: theme.colors.primary, fontWeight: '600' }]}>
+                {formatTime(item.horario_partida)}
+              </Text>
+            </View>
           </View>
-        )}
+
+          {/* Finance */}
+          <View style={styles.financeRow}>
+            <View>
+              <Text style={styles.financeLabel}>Valor Pago</Text>
+              <Text style={styles.financeTotal}>
+                R$ {parseFloat(item.valor_pago).toFixed(2).replace('.', ',')}
+              </Text>
+            </View>
+            <View style={styles.feeTag}>
+              <DollarSign size={12} color={theme.colors.secondary} />
+              <Text style={styles.feeText}>
+                Taxa: R$ {parseFloat(item.taxa_plataforma).toFixed(2).replace('.', ',')}
+              </Text>
+            </View>
+          </View>
+
+          {isClose && (
+            <View style={styles.retentionWarning}>
+              <AlertCircle size={14} color="#E65100" />
+              <Text style={styles.retentionText}>
+                ⚠️ Cancelamentos em menos de 24h não têm reembolso da taxa (10%).
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.pageTitle}>Minhas Viagens</Text>
-      
+      <LinearGradient
+        colors={['#0F2417', '#2D5A27']}
+        style={styles.pageHeader}
+      >
+        <Text style={styles.pageTitle}>Minhas Viagens</Text>
+        {!loading && (
+          <View style={styles.tripCountBadge}>
+            <Text style={styles.tripCountText}>{trips.length}</Text>
+          </View>
+        )}
+      </LinearGradient>
+
       {loading ? (
-        <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Buscando reservas...</Text>
+        </View>
       ) : (
         <FlatList
           data={trips}
           renderItem={renderTripCard}
-          keyExtractor={(item, index) => item.booking_id ? item.booking_id.toString() : index.toString()}
-          contentContainerStyle={styles.listContainer}
+          keyExtractor={(item, index) =>
+            item.booking_id ? item.booking_id.toString() : index.toString()
+          }
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Car size={48} color={theme.colors.gray} style={{ opacity: 0.5 }} />
-              <Text style={styles.emptyText}>Você ainda não fez nenhuma reserva.</Text>
+              <Text style={styles.emptyEmoji}>🗺️</Text>
+              <Text style={styles.emptyTitle}>Nenhuma viagem ainda</Text>
+              <Text style={styles.emptyText}>
+                Explore as caronas disponíveis e reserve a sua!
+              </Text>
             </View>
           }
         />
@@ -129,137 +188,196 @@ export default function MyTripsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F5F7F6',
+  },
+  pageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 10,
   },
   pageTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.white,
-    elevation: 2,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#fff',
+    flex: 1,
+    letterSpacing: -0.3,
   },
-  listContainer: {
-    padding: theme.spacing.md,
-    paddingBottom: 40,
+  tripCountBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  tripCountText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  listContent: {
+    padding: 16,
+    paddingBottom: 100,
   },
   card: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    marginBottom: 14,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#2D5A27',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 10,
   },
-  cardHeader: {
+  cardStrip: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    padding: 14,
   },
-  routeContainer: {
+  routeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     flex: 1,
   },
-  routeText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: theme.borderRadius.sm,
-  },
-  statusSuccessBadge: {
-    backgroundColor: '#E8F5E9',
-  },
-  statusWarningBadge: {
-    backgroundColor: '#FFF3E0',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  statusSuccessText: {
-    color: '#2E7D32',
-  },
-  statusWarningText: {
-    color: '#E65100',
-  },
-  detailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 6,
-  },
-  detailsText: {
+  routeCity: {
     fontSize: 14,
-    color: theme.colors.gray,
+    fontWeight: '700',
+    color: '#fff',
+    flex: 1,
   },
-  financeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  financeLabel: {
+  routeArrow: {
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text,
+    marginHorizontal: 4,
   },
-  totalPaid: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  feeContainer: {
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  statusOk: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  statusWarning: {
+    backgroundColor: '#E65100',
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  cardBody: {
+    padding: 14,
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 12,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F5F7F6',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  detailText: {
+    fontSize: 12,
+    color: theme.colors.gray,
+    fontWeight: '500',
+  },
+  financeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F4F1',
     marginTop: 4,
-    padding: 6,
-    backgroundColor: '#F5F5F5',
-    borderRadius: theme.borderRadius.sm,
-    alignSelf: 'flex-start',
+  },
+  financeLabel: {
+    fontSize: 12,
+    color: theme.colors.gray,
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  financeTotal: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: theme.colors.text,
+    letterSpacing: -0.5,
+  },
+  feeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFF3E0',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   feeText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
     color: theme.colors.secondary,
   },
   retentionWarning: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 12,
-    padding: theme.spacing.sm,
-    backgroundColor: theme.colors.warning,
-    borderRadius: theme.borderRadius.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.warningBorder,
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#FFF8E1',
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FFB300',
   },
   retentionText: {
+    flex: 1,
     fontSize: 12,
-    color: theme.colors.warningText,
-    fontWeight: '500',
+    color: '#7B5800',
+    lineHeight: 17,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    color: theme.colors.gray,
+    fontSize: 14,
   },
   emptyState: {
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 60,
+    padding: 24,
+  },
+  emptyEmoji: {
+    fontSize: 52,
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 6,
   },
   emptyText: {
-    marginTop: 12,
     color: theme.colors.gray,
-    fontSize: 16,
-  }
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 });
