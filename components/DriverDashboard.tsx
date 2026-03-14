@@ -97,22 +97,20 @@ export const DriverDashboard = ({ userId, userStatus }: DriverDashboardProps) =>
     }
   };
 
-  const openChat = (chat: Chat) => {
+  // Única função de navegação para o chat — usada tanto na aba Conversas
+  // quanto no botão 💬 ao lado de cada passageiro na aba Caronas.
+  const navigateToChat = (params: {
+    rideId: number;
+    passengerId: number;
+    otherName: string;
+    destination: string;
+  }) => {
+    const { rideId, passengerId, otherName, destination } = params;
     router.push(
-      `/chat/${chat.ride_id}?my_id=${DRIVER_ID}&passenger_id=${chat.passenger_id}` +
+      `/chat/${rideId}?my_id=${DRIVER_ID}&passenger_id=${passengerId}` +
       `&driver_id=${DRIVER_ID}` +
-      `&other_name=${encodeURIComponent(chat.passenger_name)}` +
-      `&destination=${encodeURIComponent(chat.destino)}`
-    );
-  };
-
-  // Abre chat a partir do card de carona (passageiro que reservou)
-  const openChatWithPassenger = (rideId: number, destino: string, passenger: { id: number; nome: string }) => {
-    router.push(
-      `/chat/${rideId}?my_id=${DRIVER_ID}&passenger_id=${passenger.id}` +
-      `&driver_id=${DRIVER_ID}` +
-      `&other_name=${encodeURIComponent(passenger.nome)}` +
-      `&destination=${encodeURIComponent(destino)}`
+      `&other_name=${encodeURIComponent(otherName)}` +
+      `&destination=${encodeURIComponent(destination)}`
     );
   };
 
@@ -174,7 +172,12 @@ export const DriverDashboard = ({ userId, userStatus }: DriverDashboardProps) =>
               <TouchableOpacity
                 style={styles.passengerChatBtn}
                 activeOpacity={0.75}
-                onPress={() => openChatWithPassenger(item.ride_id, item.destino, p)}
+                onPress={() => navigateToChat({
+                  rideId: item.ride_id,
+                  passengerId: p.id,
+                  otherName: p.nome,
+                  destination: item.destino,
+                })}
               >
                 <MessageCircle size={16} color={theme.colors.primary} />
               </TouchableOpacity>
@@ -189,7 +192,12 @@ export const DriverDashboard = ({ userId, userStatus }: DriverDashboardProps) =>
   const renderChatCard = ({ item }: { item: Chat }) => (
     <TouchableOpacity
       style={styles.chatCard}
-      onPress={() => openChat(item)}
+      onPress={() => navigateToChat({
+        rideId: item.ride_id,
+        passengerId: item.passenger_id,
+        otherName: item.passenger_name,
+        destination: item.destino,
+      })}
       activeOpacity={0.85}
     >
       {/* Avatar */}
