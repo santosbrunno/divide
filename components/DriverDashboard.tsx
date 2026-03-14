@@ -106,6 +106,16 @@ export const DriverDashboard = ({ userId, userStatus }: DriverDashboardProps) =>
     );
   };
 
+  // Abre chat a partir do card de carona (passageiro que reservou)
+  const openChatWithPassenger = (rideId: number, destino: string, passenger: { id: number; nome: string }) => {
+    router.push(
+      `/chat/${rideId}?my_id=${DRIVER_ID}&passenger_id=${passenger.id}` +
+      `&driver_id=${DRIVER_ID}` +
+      `&other_name=${encodeURIComponent(passenger.nome)}` +
+      `&destination=${encodeURIComponent(destino)}`
+    );
+  };
+
   const formatTime = (horario: string) => {
     try {
       return new Date(horario).toLocaleString('pt-BR', {
@@ -159,6 +169,15 @@ export const DriverDashboard = ({ userId, userStatus }: DriverDashboardProps) =>
                 <Text style={styles.avatarText}>{p.nome.charAt(0).toUpperCase()}</Text>
               </View>
               <Text style={styles.passengerName}>{p.nome}</Text>
+
+              {/* Botão de chat — só para passageiros com reserva */}
+              <TouchableOpacity
+                style={styles.passengerChatBtn}
+                activeOpacity={0.75}
+                onPress={() => openChatWithPassenger(item.ride_id, item.destino, p)}
+              >
+                <MessageCircle size={16} color={theme.colors.primary} />
+              </TouchableOpacity>
             </View>
           ))
         )}
@@ -417,6 +436,16 @@ const styles = StyleSheet.create({
   passengerItem: {
     flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6,
     backgroundColor: '#F7F9F8', borderRadius: 10, padding: 8,
+  },
+  passengerChatBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
   },
   avatar: {
     width: 32, height: 32, borderRadius: 16, backgroundColor: theme.colors.primary,
