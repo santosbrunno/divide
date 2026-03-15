@@ -1,0 +1,40 @@
+[2026-03-14T19:22:51.783Z] --- TENTATIVA DE CADASTRO: brunosoaresdesign@gmail.com (driver) ---
+[2026-03-14T19:22:51.791Z] Dados: {"nome":"BRUNO ALVES","email":"brunosoaresdesign@gmail.com","cpf":"015.720.891-56","senha":"***","tipo_perfil":"driver","cnh":"26701096931","veiculo":{"marca":"PEUGEOT","modelo":"208","placa":"NGK4581","cor":"BRANCA"}}
+[2026-03-14T19:22:51.969Z] ✅ Usuário criado: brunosoaresdesign@gmail.com (ID: 2)
+[2026-03-14T19:22:51.984Z] ✅ Veículo cadastrado para ID 2
+[2026-03-14T19:23:10.979Z] --- TENTATIVA DE CADASTRO: brunosoaresdesign@gmail.com (driver) ---
+[2026-03-14T19:23:10.981Z] Dados: {"nome":"BRUNO ALVES","email":"brunosoaresdesign@gmail.com","cpf":"015.720.891-56","senha":"***","tipo_perfil":"driver","cnh":"26701096931","veiculo":{"marca":"PEUGEOT","modelo":"208","placa":"NGK4581","cor":"BRANCA"}}
+[2026-03-14T19:23:11.091Z] ❌ Erro cadastro (brunosoaresdesign@gmail.com): Duplicate entry '015.720.891-56' for key 'cpf'
+[2026-03-14T19:23:13.602Z] --- TENTATIVA DE CADASTRO: brunosoaresdesign@gmail.com (driver) ---
+[2026-03-14T19:23:13.603Z] Dados: {"nome":"BRUNO ALVES","email":"brunosoaresdesign@gmail.com","cpf":"015.720.891-56","senha":"***","tipo_perfil":"driver","cnh":"26701096931","veiculo":{"marca":"PEUGEOT","modelo":"208","placa":"NGK4581","cor":"BRANCA"}}
+[2026-03-14T19:23:13.726Z] ❌ Erro cadastro (brunosoaresdesign@gmail.com): Duplicate entry '015.720.891-56' for key 'cpf'
+[2026-03-14T19:23:39.209Z] 🔑 Login: brunosoaresdesign@gmail.com
+[2026-03-14T19:25:20.379Z] 🔑 Login: admin@divide.com
+[2026-03-14T19:26:42.046Z] --- TENTATIVA DE CADASTRO: teste_confirm_99@test.com (passenger) ---
+[2026-03-14T19:26:42.047Z] Dados: {"nome":"Teste Confirm","email":"teste_confirm_99@test.com","cpf":"529.982.247-25","senha":"***","tipo_perfil":"passenger"}
+[2026-03-14T19:26:42.061Z] ✅ Usuário criado: teste_confirm_99@test.com (ID: 5)
+[2026-03-14T19:27:48.602Z] --- TENTATIVA DE CADASTRO: confirmacao_final@test.com (passenger) ---
+[2026-03-14T19:27:48.604Z] Dados: {"nome":"Teste Final","email":"confirmacao_final@test.com","cpf":"529.982.247-25","senha":"***","tipo_perfil":"passenger"}
+[2026-03-14T19:27:48.615Z] ❌ Erro cadastro (confirmacao_final@test.com): Duplicate entry '529.982.247-25' for key 'cpf'
+[2026-03-14T19:40:38.375Z] --- TENTATIVA DE CADASTRO: motorista@teste.com (driver) ---
+[2026-03-14T19:40:38.410Z] Dados: {"nome":"Motorista Teste","email":"motorista@teste.com","cpf":"111.111.111-11","senha":"***","tipo_perfil":"driver","cnh":"123456789","veiculo":{"marca":"Fiat","modelo":"Uno","placa":"ABC-1234","cor":"Prata"}}
+[2026-03-14T19:40:38.718Z] ✅ Usuário criado: motorista@teste.com (ID: 7)
+[2026-03-14T20:04:59.937Z] 🔑 Login: admin@divide.com
+[2026-03-14T20:06:25.094Z] 🔑 Login: brunosoaresdesign@gmail.com
+[2026-03-14T20:10:48.640Z] --- TENTATIVA DE CADASTRO: brunosoaresalvesbsa@gmail.com (passenger) ---
+[2026-03-14T20:10:48.641Z] Dados: {"nome":"BRUNO SANTOS","email":"brunosoaresalvesbsa@gmail.com","cpf":"247.387.880-35","senha":"***","tipo_perfil":"passenger","cnh":null,"veiculo":null}
+[2026-03-14T20:10:48.710Z] ✅ Usuário criado: brunosoaresalvesbsa@gmail.com (ID: 8)
+[2026-03-14T20:11:11.790Z] 🔑 Login: brunosoaresalvesbsa@gmail.com
+[2026-03-14T20:11:14.267Z] 🔑 Login: brunosoaresalvesbsa@gmail.com
+[2026-03-14T20:11:15.812Z] 🔑 Login: brunosoaresalvesbsa@gmail.com
+[2026-03-14T20:17:37.123Z] 🔑 Login: admin@divide.com
+[2026-03-14T20:18:19.532Z] 🔑 Login: brunosoaresdesign@gmail.com
+[2026-03-14T20:22:27.497Z] 🔑 Login: brunosoaresdesign@gmail.com
+[2026-03-14T20:24:10.122Z] --- TENTATIVA DE CADASTRO: brunosoaresalvesbsa@gmail.com (passenger) ---
+[2026-03-14T20:24:10.124Z] Dados: {"nome":"JONAS","email":"brunosoaresalvesbsa@gmail.com","cpf":"247.387.880-35","senha":"***","tipo_perfil":"passenger","cnh":null,"veiculo":null}
+[2026-03-14T20:24:10.151Z] ❌ Erro cadastro (brunosoaresalvesbsa@gmail.com): Duplicate entry '247.387.880-35' for key 'cpf'
+[2026-03-14T20:28:23.881Z] 🔑 Login: brunosoaresdesign@gmail.com
+[2026-03-14T21:01:39.570Z] 🔑 Login: brunosoaresalvesbsa@gmail.com
+[2026-03-14T21:02:17.454Z] 🔑 Login: brunosoaresdesign@gmail.com
+[2026-03-14T21:19:54.939Z] 🔑 Login: brunosoaresdesign@gmail.com
+[2026-03-14T22:46:26.647Z] 🔑 Login: brunosoaresdesign@gmail.com

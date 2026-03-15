@@ -3,7 +3,10 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, StatusBar
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AlertTriangle, CheckCircle, MapPin, Clock, User, ArrowLeft, MessageCircle } from 'lucide-react-native';
+import { 
+  AlertTriangle, CheckCircle, MapPin, Clock, User, ArrowLeft, MessageCircle,
+  Dog, Cigarette, Wind, Info, Heart
+} from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../constants/theme';
 import api from '../../services/api';
@@ -86,11 +89,16 @@ export default function RideConfirmationScreen() {
       Alert.alert('Atenção', 'Faça login para usar o chat.');
       return;
     }
-    router.push(
-      `/chat/${rideId}?my_id=${user.id}&passenger_id=${user.id}&driver_id=${driverId}` +
-      `&other_name=${encodeURIComponent(ride.motorista || 'Motorista')}` +
-      `&destination=${encodeURIComponent(ride.destino || '')}`
-    );
+    router.push({
+      pathname: `/chat/${rideId}`,
+      params: {
+        my_id: user.id,
+        passenger_id: user.id,
+        driver_id: driverId,
+        other_name: ride.motorista || 'Motorista',
+        destination: ride.destino || '',
+      }
+    } as any);
   };
 
   const less24h = isLessThan24h();
@@ -146,6 +154,42 @@ export default function RideConfirmationScreen() {
               </Text>
             </View>
           </View>
+        </View>
+
+        {/* Preferences Section */}
+        <View style={styles.preferencesCard}>
+          <Text style={styles.prefTitle}>🛡️ Preferências da Viagem</Text>
+          <View style={styles.prefGrid}>
+            <View style={[styles.prefBadge, !ride.permite_pets && styles.prefBadgeDisabled]}>
+              <Dog size={16} color={ride.permite_pets ? theme.colors.primary : '#AAB4B0'} />
+              <Text style={[styles.prefBadgeText, !ride.permite_pets && styles.prefBadgeTextDisabled]}>
+                {ride.permite_pets ? 'Aceita Pets' : 'Sem Pets'}
+              </Text>
+            </View>
+            <View style={[styles.prefBadge, !ride.permite_fumar && styles.prefBadgeDisabled]}>
+              <Cigarette size={16} color={ride.permite_fumar ? theme.colors.primary : '#AAB4B0'} />
+              <Text style={[styles.prefBadgeText, !ride.permite_fumar && styles.prefBadgeTextDisabled]}>
+                {ride.permite_fumar ? 'Permite Fumar' : 'Não Fuma'}
+              </Text>
+            </View>
+            <View style={[styles.prefBadge, !ride.tem_ar_condicionado && styles.prefBadgeDisabled]}>
+              <Wind size={16} color={ride.tem_ar_condicionado ? theme.colors.primary : '#AAB4B0'} />
+              <Text style={[styles.prefBadgeText, !ride.tem_ar_condicionado && styles.prefBadgeTextDisabled]}>
+                {ride.tem_ar_condicionado ? 'Ar-condicionado' : 'Sem Ar'}
+              </Text>
+            </View>
+            <View style={styles.prefBadge}>
+              <MessageCircle size={16} color={theme.colors.primary} />
+              <Text style={styles.prefBadgeText}>Papo: {ride.nivel_conversa || 'moderado'}</Text>
+            </View>
+          </View>
+
+          {ride.apenas_mulheres ? (
+            <View style={styles.womenNotice}>
+              <Heart size={16} color="#E91E63" />
+              <Text style={styles.womenNoticeText}>Viagem exclusiva para mulheres.</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Cost Card */}
@@ -319,6 +363,25 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#F0F4F1',
   },
+  preferencesCard: {
+    backgroundColor: '#fff', padding: 18, borderRadius: 20, marginBottom: 14,
+    elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07, shadowRadius: 8,
+  },
+  prefTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.text, marginBottom: 14 },
+  prefGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  prefBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F0F7F1',
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: '#C8E6C9',
+  },
+  prefBadgeDisabled: { backgroundColor: '#F5F7F6', borderColor: '#E0E8E1' },
+  prefBadgeText: { fontSize: 12, fontWeight: '700', color: theme.colors.primary },
+  prefBadgeTextDisabled: { color: '#AAB4B0' },
+  womenNotice: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16,
+    backgroundColor: '#FCE4EC', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#F8BBD0',
+  },
+  womenNoticeText: { color: '#C2185B', fontSize: 13, fontWeight: '700' },
   costCard: {
     backgroundColor: '#fff',
     borderRadius: 20,

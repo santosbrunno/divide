@@ -11,8 +11,20 @@ function logToFile(msg) {
 
 app.use(cors()); app.use(express.json());
 
-const db = mysql.createConnection({
-    host: 'localhost', user: 'root', password: '', database: 'divide_app'
+const db = mysql.createPool({
+    host: 'localhost', 
+    user: 'root', 
+    password: '', 
+    database: 'divide_app',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+});
+
+// Middleware for logging requests
+app.use((req, res, next) => {
+    console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+    next();
 });
 
 // Rota de Cadastro
@@ -74,6 +86,17 @@ app.post('/cadastro', (req, res) => {
     });
 });
 
+// Listar veículos de um usuário
+app.get('/vehicles/:userId', (req, res) => {
+    const { userId } = req.params;
+    const sql = "SELECT * FROM vehicles WHERE owner_id = ?";
+    db.query(sql, [userId], (err, results) => {
+        if (err) return res.status(500).json(err);
+        res.json(results);
+    });
+});
+
+
 // Rota de Login
 app.post('/login', (req, res) => {
     const { email, senha } = req.body;
@@ -108,9 +131,29 @@ app.post('/login', (req, res) => {
 
 // Listar caronas (Onde o app vai buscar)
 app.get('/caronas', (req, res) => {
-    const sql = "SELECT r.*, u.nome as motorista, v.modelo FROM rides r JOIN users u ON r.driver_id = u.user_id JOIN vehicles v ON r.vehicle_id = v.vehicle_id WHERE r.status_carona = 'aberta'";
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json(err);
+    const { apenas_mulheres, permite_pets, permite_fumar, tem_ar_condicionado } = req.query;
+    
+    let sql = "SELECT r.*, u.nome as motorista, v.model FROM rides r JOIN users u ON r.driver_id = u.user_id JOIN vehicles v ON r.vehicle_id = v.vehicle_id WHERE r.status_carona = 'aberta'";
+    const params = [];
+
+    if (apenas_mulheres === 'true') {
+        sql += " AND r.apenas_mulheres = 1";
+    }
+    if (permite_pets === 'true') {
+        sql += " AND r.permite_pets = 1";
+    }
+    if (permite_fumar === 'true') {
+        sql += " AND r.permite_fumar = 1";
+    }
+    if (tem_ar_condicionado === 'true') {
+        sql += " AND r.tem_ar_condicionado = 1";
+    }
+
+    db.query(sql, params, (err, results) => {
+        if (err) {
+            console.error("❌ Erro ao buscar caronas:", err);
+            return res.status(500).json(err);
+        }
         res.json(results);
     });
 });
@@ -129,20 +172,37 @@ app.post('/oferecer-carona', (req, res) => {
         const status = results[0].status_motorista;
 
         if (status !== 'aprovado') {
+            console.log(`⚠️ Motorista ${driver_id} tentou postar carona mas está com status: ${status}`);
             return res.status(403).json({ 
                 error: "Sua conta de motorista ainda está em análise. Aguarde a aprovação do Admin para postar caronas." 
             });
         }
 
+        console.log(`✅ Motorista ${driver_id} aprovado. Iniciando insert da carona...`);
+
         // 2. Se estiver aprovado, segue o jogo e cria a carona
-        const sqlInsertRide = "INSERT INTO rides (driver_id, vehicle_id, origem, destino, data_partida, vagas_disponiveis, preco_base) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        const { permite_pets, permite_fumar, tem_ar_condicionado, apenas_mulheres, nivel_conversa, distancia_km } = req.body;
         
-        db.query(sqlInsertRide, [driver_id, vehicle_id, origem, destino, data_partida, vagas, preco_base], (err) => {
+        const sqlInsertRide = `
+            INSERT INTO rides 
+            (driver_id, vehicle_id, origem, destino, data_partida, vagas_disponiveis, preco_base, 
+             permite_pets, permite_fumar, tem_ar_condicionado, apenas_mulheres, nivel_conversa, distancia_km) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        const params = [
+            driver_id, vehicle_id, origem, destino, data_partida, vagas, preco_base,
+            permite_pets ? 1 : 0, permite_fumar ? 1 : 0, tem_ar_condicionado ? 1 : 0, 
+            apenas_mulheres ? 1 : 0, nivel_conversa || 'moderado', distancia_km || 0
+        ];
+
+        db.query(sqlInsertRide, params, (err, result) => {
             if (err) {
-                console.error("Erro ao criar carona:", err);
+                console.error("❌ Erro ao criar carona no MySQL:", err);
                 return res.status(500).json(err);
             }
-            res.json({ message: "Carona publicada com sucesso!" });
+            console.log(`✨ Carona criada com sucesso! ID: ${result.insertId}`);
+            res.json({ message: "Carona publicada com sucesso!", ride_id: result.insertId });
         });
     });
 });
@@ -181,7 +241,7 @@ app.post('/reservar', (req, res) => {
 app.get('/minhas-reservas/:id', (req, res) => {
     const passenger_id = req.params.id;
     const sql = `
-        SELECT b.*, r.origem, r.destino, r.data_partida as horario_partida, u.nome as motorista, v.modelo as carro
+        SELECT b.*, r.origem, r.destino, r.data_partida as horario_partida, u.nome as motorista, v.model as carro
         FROM bookings b
         JOIN rides r ON b.ride_id = r.ride_id
         JOIN users u ON r.driver_id = u.user_id
@@ -275,15 +335,25 @@ app.get('/admin/motoristas/pendentes', (req, res) => {
 app.patch('/admin/motoristas/:id/status', (req, res) => {
     const { id } = req.params;
     const { status } = req.body; // 'aprovado' ou 'rejeitado'
+    console.log(`[${new Date().toLocaleTimeString()}] Admin tentando ${status} motorista ID ${id}`);
 
     if (!['aprovado', 'rejeitado'].includes(status)) {
         return res.status(400).json({ error: "Status inválido." });
     }
 
     const sql = "UPDATE users SET status_motorista = ? WHERE user_id = ? AND tipo_perfil = 'driver'";
+    console.log(`Executando SQL: ${sql} com params: [${status}, ${id}]`);
+    
     db.query(sql, [status, id], (err, result) => {
-        if (err) return res.status(500).json(err);
-        if (result.affectedRows === 0) return res.status(404).json({ error: "Motorista não encontrado." });
+        if (err) {
+            console.error("Erro ao atualizar status:", err);
+            return res.status(500).json(err);
+        }
+        console.log("Resultado do UPDATE:", result);
+        if (result.affectedRows === 0) {
+            console.log("Nenhuma linha afetada. Verifique se o ID existe e se o perfil é 'driver'.");
+            return res.status(404).json({ error: "Motorista não encontrado ou já processado." });
+        }
         res.json({ message: `Motorista ${status} com sucesso!` });
     });
 });

@@ -5,8 +5,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Animated,
 } from 'react-native';
-import { TrendingUp, DollarSign, ChevronRight, Users, BarChart2 } from 'lucide-react-native';
+import { TrendingUp, DollarSign, ChevronRight, Users, BarChart2, Activity, ShieldCheck, PieChart } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../constants/theme';
 import api from '../services/api';
@@ -45,225 +46,143 @@ export const AdminDashboard = () => {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-
-      {/* Stats Grid */}
-      <View style={styles.statsGrid}>
-        {/* Revenue Card */}
-        <LinearGradient
-          colors={['#1B3A20', '#2D5A27']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.statCard, styles.statCardLarge]}
-        >
-          <View style={styles.statIconBg}>
-            <TrendingUp size={22} color="#fff" />
-          </View>
-          <Text style={styles.statLabelLight}>Lucro Total (Taxas)</Text>
-          <Text style={styles.statValueLarge}>
-            {faturamento !== null
-              ? `R$ ${parseFloat(faturamento.toString()).toFixed(2).replace('.', ',')}`
-              : '...'}
-          </Text>
-          <Text style={styles.statSubtext}>10% de todas as viagens</Text>
-        </LinearGradient>
-
-        {/* Trips Card */}
-        <LinearGradient
-          colors={['#E67E22', '#D35400']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.statCard}
-        >
-          <View style={[styles.statIconBg, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-            <BarChart2 size={20} color="#fff" />
-          </View>
-          <Text style={styles.statLabelLight}>Viagens</Text>
-          <Text style={styles.statValueMedium}>{viagens}</Text>
-        </LinearGradient>
+      
+      {/* Admin Status Header */}
+      <View style={styles.statusHeader}>
+        <View style={styles.statusDot} />
+        <Text style={styles.statusText}>Sistema Online · Central de Controle</Text>
       </View>
 
-      {/* Section Title */}
-      <Text style={styles.sectionLabel}>Ações Rápidas</Text>
-
-      {/* Action Buttons */}
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={() => router.push('/admin/dashboard')}
-        style={styles.actionCard}
+      {/* Main Stats Card */}
+      <LinearGradient
+        colors={['#1B3A20', '#0F2417']}
+        style={styles.mainCard}
       >
-        <View style={styles.actionIconWrapper}>
-          <DollarSign size={20} color={theme.colors.primary} />
-        </View>
-        <View style={styles.actionContent}>
-          <Text style={styles.actionTitle}>Relatório Financeiro</Text>
-          <Text style={styles.actionSubtitle}>Ver taxas e receitas em detalhe</Text>
-        </View>
-        <ChevronRight size={20} color={theme.colors.gray} />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={() => router.push('/admin/approvals')}
-      >
-        <LinearGradient
-          colors={['#1B3A20', '#2D5A27']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.actionCardGradient}
-        >
-          <View style={[styles.actionIconWrapper, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-            <Users size={20} color="#fff" />
-          </View>
-          <View style={styles.actionContent}>
-            <Text style={[styles.actionTitle, { color: '#fff' }]}>Aprovar Motoristas</Text>
-            <Text style={[styles.actionSubtitle, { color: 'rgba(255,255,255,0.65)' }]}>
-              Revisar cadastros pendentes
+        <View style={styles.mainCardTop}>
+          <View>
+            <Text style={styles.mainLabel}>Faturamento Total</Text>
+            <Text style={styles.mainValue}>
+              {faturamento !== null
+                ? `R$ ${parseFloat(faturamento.toString()).toFixed(2).replace('.', ',')}`
+                : 'R$ 0,00'}
             </Text>
           </View>
-          <View style={styles.badgeRow}>
-            {pendingCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{pendingCount}</Text>
-              </View>
-            )}
-            <ChevronRight size={20} color="rgba(255,255,255,0.7)" />
+          <View style={styles.mainIconWrapper}>
+            <DollarSign size={24} color="#D4AF37" />
           </View>
+        </View>
+        <View style={styles.mainCardBottom}>
+          <Activity size={14} color="#4ADE80" />
+          <Text style={styles.mainTrend}>+ 12.5% em relação ao mês anterior</Text>
+        </View>
+      </LinearGradient>
+
+      {/* Stats Row */}
+      <View style={styles.statsRow}>
+        <View style={styles.miniCard}>
+          <View style={[styles.miniIconBg, { backgroundColor: 'rgba(230,126,34,0.1)' }]}>
+            <BarChart2 size={18} color="#E67E22" />
+          </View>
+          <Text style={styles.miniValue}>{viagens}</Text>
+          <Text style={styles.miniLabel}>Viagens</Text>
+        </View>
+
+        <View style={styles.miniCard}>
+          <View style={[styles.miniIconBg, { backgroundColor: 'rgba(74,222,128,0.1)' }]}>
+            <Users size={18} color="#4ADE80" />
+          </View>
+          <Text style={styles.miniValue}>152</Text>
+          <Text style={styles.miniLabel}>Usuários</Text>
+        </View>
+      </View>
+
+      {/* Actions */}
+      <Text style={styles.sectionLabel}>Gestão de Plataforma</Text>
+      
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => router.push('/admin/approvals')}
+        style={styles.actionItem}
+      >
+        <LinearGradient colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.02)']} style={styles.actionInner}>
+          <View style={[styles.actionIconBg, { backgroundColor: pendingCount > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)' }]}>
+             <ShieldCheck size={20} color={pendingCount > 0 ? '#F87171' : 'rgba(255,255,255,0.6)'} />
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>Aprovar Motoristas</Text>
+            <Text style={styles.actionSub}>Analisar novos cadastros da fila</Text>
+          </View>
+          {pendingCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{pendingCount}</Text>
+            </View>
+          )}
+          <ChevronRight size={18} color="rgba(255,255,255,0.2)" />
         </LinearGradient>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => router.push('/admin/dashboard')}
+        style={styles.actionItem}
+      >
+        <LinearGradient colors={['#E67E22', '#D35400']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.actionInner}>
+          <View style={[styles.actionIconBg, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+             <PieChart size={20} color="#fff" />
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={[styles.actionTitle, { color: '#fff' }]}>Relatório Financeiro</Text>
+            <Text style={[styles.actionSub, { color: 'rgba(255,255,255,0.7)' }]}>Ver transações e taxas detalhadas</Text>
+          </View>
+          <ChevronRight size={18} color="rgba(255,255,255,0.5)" />
+        </LinearGradient>
+      </TouchableOpacity>
+
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7F6',
-    padding: 16,
+  container: { flex: 1, padding: 20 },
+  statusHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#4ADE80' },
+  statusText: { color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  
+  mainCard: {
+    borderRadius: 24, padding: 24, marginBottom: 16,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3, shadowRadius: 20,
   },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
+  mainCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  mainLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '600' },
+  mainValue: { color: '#fff', fontSize: 28, fontWeight: '900', marginTop: 4 },
+  mainIconWrapper: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', justifyContent: 'center', alignItems: 'center' },
+  mainCardBottom: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20 },
+  mainTrend: { color: '#4ADE80', fontSize: 12, fontWeight: '600' },
+
+  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
+  miniCard: {
+    flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20,
+    padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
   },
-  statCard: {
-    flex: 1,
-    borderRadius: 20,
-    padding: 16,
-    gap: 6,
-    elevation: 6,
-    shadowColor: '#0F2417',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
+  miniIconBg: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  miniValue: { color: '#fff', fontSize: 20, fontWeight: '900' },
+  miniLabel: { color: 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: '600' },
+
+  sectionLabel: { color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12, marginLeft: 4 },
+  
+  actionItem: { marginBottom: 12 },
+  actionInner: {
+    flexDirection: 'row', alignItems: 'center', padding: 14,
+    borderRadius: 20, gap: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
   },
-  statCardLarge: {
-    flex: 1.6,
-  },
-  statIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  statLabelLight: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  statValueLarge: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: -0.5,
-  },
-  statValueMedium: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#fff',
-  },
-  statSubtext: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
-    marginTop: 2,
-  },
-  sectionLabel: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: theme.colors.text,
-    marginBottom: 12,
-  },
-  actionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 18,
-    marginBottom: 12,
-    gap: 12,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-  },
-  actionCardGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 18,
-    marginBottom: 12,
-    gap: 12,
-    elevation: 6,
-    shadowColor: '#0F2417',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-  },
-  actionIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  actionContent: {
-    flex: 1,
-  },
-  actionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  actionSubtitle: {
-    fontSize: 12,
-    color: theme.colors.gray,
-    marginTop: 2,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  badge: {
-    backgroundColor: '#FF4444',
-    borderRadius: 12,
-    minWidth: 24,
-    height: 24,
-    paddingHorizontal: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-  },
+  actionIconBg: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  actionContent: { flex: 1 },
+  actionTitle: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  actionSub: { fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
+  
+  badge: { backgroundColor: '#EF4444', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginRight: 4 },
+  badgeText: { color: '#fff', fontSize: 11, fontWeight: '900' },
 });

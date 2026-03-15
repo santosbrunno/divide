@@ -1,87 +1,78 @@
-# 🚗 Divide - Caronas Inteligentes em Santa Catarina
+# 🚗 Divide - Caronas Inteligentes & Sustentáveis (Santa Catarina)
 
-O **Divide** é uma plataforma de caronas compartilhadas focada na região de Santa Catarina (Blumenau, Pomerode, Timbó e região). O sistema conecta motoristas que desejam dividir custos de viagem com passageiros que buscam uma forma econômica, segura e sustentável de se deslocar.
-
-## 🏗️ Estrutura do Projeto
-
-O projeto é dividido em dois grandes módulos:
-- **/Divide**: Aplicativo mobile desenvolvido em React Native (Expo).
-- **/server**: Servidor backend desenvolvido em Node.js (Express) e banco de dados MySQL.
+O **Divide** é uma plataforma premium de caronas compartilhadas focada na mobilidade inteligente de Santa Catarina (Blumenau, Pomerode, Timbó e região). Conectamos motoristas que buscam dividir custos com passageiros que valorizam economia, segurança e uma experiência de viagem superior.
 
 ---
 
-## ✨ Funcionalidades Principais
+## ✨ Diferenciais & Novidades (v2.0)
 
-### 👤 Usuários e Perfis
-- **Passageiro**: Busca caronas, reserva vagas e gerencia seu histórico de viagens.
-- **Motorista**: Oferece caronas, cadastra veículos e gerencia seus passageiros confirmados.
-- **Admin**: Aprova novos motoristas, monitora o faturamento (taxas da plataforma) e estatísticas gerais.
+### 🎨 Estética Premium "Verde Floresta"
+- **Design de Alto Impacto**: Interface inspirada na natureza Catarinense, utilizando paletas de **Verde Floresta (#2D5A27)**, **Dourado (#D4AF37)** e **Laranja Terral**.
+- **Efeitos Modernos**: Uso de gradientes lineares, sombras (glow effects), glassmorphism e micro-animações para uma sensação de app de alto luxo.
+- **Visualização de Rota**: Simulação dinâmica do trajeto na tela de criação de oferta.
 
-### 🛡️ Segurança e Regras de Negócio
-- **Validação de CPF**: Algoritmo rigoroso para garantir a autenticidade dos dados.
-- **Aprovação Documental**: Motoristas só podem postar caronas após a aprovação manual dos documentos (CNH/Veículo) pelo administrador.
-- **Modelo de Receita**: A plataforma retém uma taxa de **10%** sobre o valor base de cada assento reservado.
+### 💰 Economia Justa e Sustentável
+- **Lógica para Motoristas**: Cálculo automático de ganhos baseado em distância (**R$ 0,60/km**), garantindo o lucro líquido justo para quem dirige.
+- **Booking Summary**: Componente de confirmação transparente que detalha o valor da carona e a taxa de serviço (10%) para o passageiro.
+- **Sustentabilidade**: Política de precificação baseada em modelos de baixa emissão e compartilhamento eficiente.
 
-### 📱 Interface (UI/UX)
-- Dashboards dinâmicos e separados por perfil.
-- Cabeçalhos personalizados com saudações e badges de status.
-- Design moderno usando a paleta de cores institucional.
+### 📱 Experiência do Usuário (UX)
+- **Criação Ágil de Ofertas**: Seletores nativos de data/hora otimizados para Android, iOS e Web/Desktop.
+- **Previsão de Lucro**: O motorista visualiza seus "Ganhos Previstos" em tempo real enquanto configura a viagem.
+- **Dashboards Personalizados**: Painéis exclusivos para Passageiros, Motoristas e Administradores com estatísticas dinâmicas.
 
 ---
 
-## 🚀 Tecnologias Utilizadas
+## 🏗️ Estrutura do Ecossistema
+
+- **/app**: Aplicativo mobile desenvolvido em **React Native (Expo)** com arquitetura de rotas dinâmicas.
+- **/components**: Biblioteca de UI reutilizável, incluindo o `BookingSummary` e o `PremiumButton`.
+- **/server**: API robusta em **Node.js (Express)** com banco de dados **MySQL** otimizado para transações geográficas.
+
+---
+
+## 🚀 Tecnologias de Ponta
 
 ### Mobile (Frontend)
-- **React Native** com **Expo Router**
-- **TypeScript** para maior segurança no código
-- **Lucide React Native** para ícones modernos
-- **Context API** para gestão de roles e autenticação
+- **Expo Router SDK 54+**: Navegação moderna baseada em arquivos.
+- **TypeScript**: Estabilidade e segurança em todo o fluxo de dados.
+- **Lucide Icons**: Ícones minimalistas e intuitivos.
+- **Linear Gradient**: Efeitos de profundidade e elegância visual.
 
-### Backend
-- **Node.js** com **Express**
-- **MySQL** para persistência de dados
-- **CORS** para comunicação segura com o app
+### Backend & Database
+- **Node.js**: Processamento assíncrono de alta performance.
+- **MySQL 8.0**: Relacionamentos complexos entre usuários, veículos e reservas.
+- **Geolocalização**: Preparado para integração com APIs de mapas para cálculo de distância real.
 
 ---
 
-## 🛠️ Como Iniciar
+## 🛠️ Instalação Rápida
 
-### 1. Servidor e Banco de Dados
-Navegue até a pasta `/server`:
+### 1. Servidor
 ```bash
-# Instalar dependências
+cd server
 npm install
-
-# Configurar Banco de Dados
-# Execute o arquivo schema.sql no seu MySQL Workbench ou terminal.
-
-# Iniciar o servidor
+# Configure seu .env e schema.sql
 node server.js
 ```
 
-### 2. Aplicativo Mobile
-Navegue até a pasta `/Divide`:
+### 2. Aplicativo
 ```bash
-# Instalar dependências
+cd ..
 npm install
-
-# Iniciar o Expo
-npx expo start
+npx expo start --web # Ou --android / --ios
 ```
 
 ---
 
-## 📊 Estrutura do Banco de Dados
-
-- `users`: Armazena dados cadastrais, CNH e tipo de perfil.
-- `vehicles`: Informações dos veículos vinculados aos motoristas.
-- `rides`: Detalhes das caronas (origem, destino, data, vagas).
-- `bookings`: Reservas realizadas e taxas geradas para a plataforma.
+## 📊 Regras de Negócio Implementadas
+- **Aprovação de Motoristas**: Fluxo de segurança para validação de documentos pelo Admin.
+- **Taxa de Plataforma**: Retenção automática de 10% para manutenção do ecossistema.
+- **Validação de CPF**: Proteção contra cadastros falsos usando dígito verificador real.
 
 ---
 
-## 📝 Licença
-Este projeto foi desenvolvido como uma solução de mobilidade regional para Santa Catarina.
+## 📝 Compromisso Regional
+Este projeto nasceu para transformar a BR-470 e as rodovias de Santa Catarina em caminhos mais leves, baratos e sustentáveis.
 
----
 *Desenvolvido com ❤️ para a comunidade Catarinense.*

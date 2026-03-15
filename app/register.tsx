@@ -146,8 +146,15 @@ export default function RegisterScreen() {
         );
       }
     } catch (error: any) {
-      const errorMsg = error.response?.data?.error || 'Não foi possível completar o cadastro.';
-      Alert.alert('Erro no Cadastro', errorMsg);
+      if (error.response?.status === 409) {
+        Alert.alert(
+          'Atenção ⚠️',
+          'Este E-mail ou CPF já está cadastrado em nossa base. Tente fazer login ou use dados diferentes.'
+        );
+      } else {
+        const errorMsg = error.response?.data?.error || 'Não foi possível completar o cadastro.';
+        Alert.alert('Erro no Cadastro', errorMsg);
+      }
     } finally {
       setLoading(false);
     }

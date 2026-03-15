@@ -9,15 +9,18 @@ import {
   SafeAreaView,
   StatusBar,
   Image,
+  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
-  TrendingUp, Users, MapPin, DollarSign, LogOut, BarChart2, ChevronRight
+  TrendingUp, Users, MapPin, DollarSign, LogOut, BarChart2, ChevronRight, ArrowLeft, Calendar, Info
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../constants/theme';
 import api from '../../services/api';
 import { useRole } from '../../context/RoleContext';
+
+const { width } = Dimensions.get('window');
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -40,10 +43,10 @@ export default function AdminDashboard() {
         api.get('/admin/taxas-recentes'),
         api.get('/admin/motoristas/pendentes'),
       ]);
-      setFaturamento(faturamentoRes.data.total_faturamento);
+      setFaturamento(faturamentoRes.data.total_faturamento || 0);
       setViagens(faturamentoRes.data.total_viagens || 0);
-      setTaxas(taxasRes.data);
-      setPendingCount(pendentesRes.data.length);
+      setTaxas(taxasRes.data || []);
+      setPendingCount(pendentesRes.data.length || 0);
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error);
     } finally {
@@ -60,455 +63,165 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Carregando painel...</Text>
+        <StatusBar barStyle="light-content" backgroundColor="#0A1A0D" />
+        <LinearGradient colors={['#0A1A0D', '#0F2417']} style={StyleSheet.absoluteFill} />
+        <ActivityIndicator size="large" color="#E67E22" />
+        <Text style={styles.loadingText}>Sincronizando dados...</Text>
       </View>
     );
   }
 
-  const initials = user?.nome
-    ? user.nome.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
-    : 'A';
-
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#0A1A0D" />
+      <LinearGradient colors={['#0A1A0D', '#0F2417', '#1B3A20']} style={StyleSheet.absoluteFill} />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <SafeAreaView style={styles.safeArea}>
         {/* Header */}
-        <LinearGradient colors={['#0F2417', '#1B3A20', '#2D5A27']} style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.adminAvatar}>
-              <Text style={styles.adminAvatarText}>{initials}</Text>
+        <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <ArrowLeft size={24} color="#fff" />
+            </TouchableOpacity>
+            <View style={styles.headerTitleContainer}>
+                <Text style={styles.headerLabel}>Relatório Financeiro</Text>
+                <Text style={styles.headerTitle}>Dashboard Admin</Text>
             </View>
-            <View>
-              <Text style={styles.welcomeLabel}>Painel de Controle</Text>
-              <Text style={styles.welcomeName}>Olá, {user?.nome?.split(' ')[0] || 'Admin'} 👋</Text>
-            </View>
-          </View>
-          <View style={styles.headerActions}>
-            <Image
+             <Image
               source={require('../../assets/images/divide_logo.png')}
-              style={styles.logoSmall}
+              style={styles.logo}
               resizeMode="contain"
             />
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <LogOut size={18} color="rgba(255,255,255,0.7)" />
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
+        </View>
 
-        <View style={styles.content}>
-          {/* Stats Row */}
-          <View style={styles.statsRow}>
-            {/* Revenue Main Card */}
-            <LinearGradient
-              colors={['#E67E22', '#D35400']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.statCard, styles.statCardMain]}
-            >
-              <View style={styles.statIcon}>
-                <TrendingUp size={20} color="#fff" />
-              </View>
-              <Text style={styles.statLabelLight}>Lucro Total</Text>
-              <Text style={styles.statMainValue}>
-                R$ {parseFloat(faturamento.toString()).toFixed(2).replace('.', ',')}
-              </Text>
-              <Text style={styles.statSub}>10% das viagens</Text>
-            </LinearGradient>
-
-            <View style={styles.statColumnRight}>
-              {/* Trips */}
-              <LinearGradient
-                colors={['#1B3A20', '#2D5A27']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.statCardSmall}
-              >
-                <BarChart2 size={16} color="rgba(255,255,255,0.7)" />
-                <Text style={styles.statSmallValue}>{viagens}</Text>
-                <Text style={styles.statSmallLabel}>Viagens</Text>
-              </LinearGradient>
-
-              {/* Pending */}
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => router.push('/admin/approvals')}
-              >
-                <LinearGradient
-                  colors={pendingCount > 0 ? ['#c0392b', '#922b21'] : ['#34495e', '#2c3e50']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.statCardSmall}
-                >
-                  <Users size={16} color="rgba(255,255,255,0.7)" />
-                  <Text style={styles.statSmallValue}>{pendingCount}</Text>
-                  <Text style={styles.statSmallLabel}>Pendentes</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Quick Actions */}
-          <Text style={styles.sectionTitle}>Ações Rápidas</Text>
-
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => router.push('/admin/approvals')}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+          
+          {/* Main Revenue Card (Glass) */}
+          <LinearGradient
+            colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.03)']}
+            style={styles.revenueCard}
           >
-            <LinearGradient
-              colors={['#1B3A20', '#2D5A27']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.quickActionCard}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-                <Users size={20} color="#fff" />
-              </View>
-              <View style={styles.quickActionContent}>
-                <Text style={[styles.quickActionTitle, { color: '#fff' }]}>Aprovar Motoristas</Text>
-                <Text style={[styles.quickActionSub, { color: 'rgba(255,255,255,0.6)' }]}>
-                  {pendingCount > 0 ? `${pendingCount} aguardando análise` : 'Nenhum pendente'}
-                </Text>
-              </View>
-              {pendingCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{pendingCount}</Text>
+            <View style={styles.revenueTop}>
+                <View style={styles.revenueIconBg}>
+                    <TrendingUp size={24} color="#E67E22" />
                 </View>
-              )}
-              <ChevronRight size={20} color="rgba(255,255,255,0.5)" />
-            </LinearGradient>
-          </TouchableOpacity>
+                <View>
+                    <Text style={styles.revenueLabel}>Receita Gerada (10%)</Text>
+                    <Text style={styles.revenueValue}>R$ {faturamento.toFixed(2).replace('.', ',')}</Text>
+                </View>
+            </View>
+            <View style={styles.revenueBottom}>
+                <View style={styles.statItem}>
+                    <Text style={styles.statVal}>{viagens}</Text>
+                    <Text style={styles.statLab}>Viagens</Text>
+                </View>
+                <View style={styles.vLine} />
+                <View style={styles.statItem}>
+                    <Text style={styles.statVal}>{pendingCount}</Text>
+                    <Text style={styles.statLab}>Pendentes</Text>
+                </View>
+                 <View style={styles.vLine} />
+                <View style={styles.statItem}>
+                    <Text style={styles.statVal}>Active</Text>
+                    <Text style={styles.statLab}>Status</Text>
+                </View>
+            </View>
+          </LinearGradient>
 
-          <View style={styles.quickActionCard2}>
-            <View style={styles.quickActionIcon2}>
-              <MapPin size={20} color={theme.colors.primary} />
-            </View>
-            <View style={styles.quickActionContent}>
-              <Text style={styles.quickActionTitle}>Região Ativa</Text>
-              <Text style={styles.quickActionSub}>Santa Catarina · Brasil</Text>
-            </View>
+          {/* Activity Section */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Transações Recentes</Text>
+            <TouchableOpacity><Text style={styles.seeAll}>Ver tudo</Text></TouchableOpacity>
           </View>
-
-          {/* Recent Taxes */}
-          <Text style={styles.sectionTitle}>Últimas Taxas Recebidas</Text>
 
           {taxas.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyEmoji}>💰</Text>
-              <Text style={styles.emptyText}>Nenhuma taxa recebida ainda.</Text>
-            </View>
+             <View style={styles.emptyCard}>
+                <Info size={32} color="rgba(255,255,255,0.15)" />
+                <Text style={styles.emptyText}>Sem dados no momento</Text>
+             </View>
           ) : (
-            <View style={styles.taxasList}>
-              {taxas.map((item, index) => (
-                <View key={item.booking_id} style={styles.taxaItem}>
-                  <View style={styles.taxaIcon}>
-                    <DollarSign size={15} color={theme.colors.secondary} />
-                  </View>
-                  <View style={styles.taxaInfo}>
-                    <Text style={styles.taxaPassenger}>{item.passageiro}</Text>
-                    <Text style={styles.taxaRoute}>
-                      {item.origin_city} → {item.destination_city}
-                    </Text>
-                  </View>
-                  <Text style={styles.taxaValue}>
-                    + R$ {parseFloat(item.taxa_plataforma).toFixed(2).replace('.', ',')}
-                  </Text>
+            taxas.map((item) => (
+              <LinearGradient 
+                key={item.booking_id} 
+                colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.01)']}
+                style={styles.taxaCard}
+              >
+                <View style={styles.taxaLeft}>
+                    <View style={styles.taxaIconBg}>
+                        <DollarSign size={16} color="#4ADE80" />
+                    </View>
+                    <View>
+                        <Text style={styles.taxaPassenger}>{item.passageiro}</Text>
+                        <Text style={styles.taxaRoute}>{item.origin_city} ➔ {item.destination_city}</Text>
+                    </View>
                 </View>
-              ))}
-            </View>
+                <View style={{alignItems: 'flex-end'}}>
+                    <Text style={styles.taxaValue}>+ R$ {parseFloat(item.taxa_plataforma).toFixed(2).replace('.', ',')}</Text>
+                    <Text style={styles.taxaDate}>{new Date(item.data_reserva).toLocaleDateString()}</Text>
+                </View>
+              </LinearGradient>
+            ))
           )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+             <LogOut size={20} color="rgba(255,255,255,0.4)" />
+             <Text style={styles.logoutText}>Encerrar Sessão Admin</Text>
+          </TouchableOpacity>
+
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F5F7F6',
+  root: { flex: 1, backgroundColor: '#0A1A0D' },
+  safeArea: { flex: 1 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: 'rgba(255,255,255,0.4)', marginTop: 12, fontSize: 13, fontWeight: '700', letterSpacing: 1 },
+  
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, gap: 16 },
+  backBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
+  headerTitleContainer: { flex: 1 },
+  headerLabel: { color: '#E67E22', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  headerTitle: { color: '#fff', fontSize: 20, fontWeight: '900' },
+  logo: { width: 60, height: 30, opacity: 0.6 },
+
+  scroll: { padding: 20 },
+
+  revenueCard: { 
+    borderRadius: 32, padding: 24, marginBottom: 32,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' 
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#F5F7F6',
+  revenueTop: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 24 },
+  revenueIconBg: { width: 56, height: 56, borderRadius: 20, backgroundColor: 'rgba(230,126,34,0.15)', justifyContent: 'center', alignItems: 'center' },
+  revenueLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 14, fontWeight: '600' },
+  revenueValue: { color: '#fff', fontSize: 32, fontWeight: '900' },
+  
+  revenueBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 20 },
+  statItem: { alignItems: 'center', flex: 1 },
+  statVal: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  statLab: { color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '600', marginTop: 2 },
+  vLine: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.05)' },
+
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  sectionTitle: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  seeAll: { color: '#E67E22', fontSize: 13, fontWeight: '700' },
+
+  taxaCard: { 
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', 
+    padding: 16, borderRadius: 20, marginBottom: 12,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)'
   },
-  loadingText: {
-    color: theme.colors.gray,
-    fontSize: 14,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 24,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  adminAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  adminAvatarText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 16,
-  },
-  welcomeLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.55)',
-    fontWeight: '500',
-  },
-  welcomeName: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: -0.3,
-  },
-  headerActions: {
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  logoSmall: {
-    width: 70,
-    height: 36,
-    opacity: 0.7,
-  },
-  logoutButton: {
-    padding: 6,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 8,
-  },
-  content: {
-    padding: 16,
-    marginTop: -8,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  statCard: {
-    borderRadius: 20,
-    padding: 16,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-  },
-  statCardMain: {
-    flex: 1.5,
-    gap: 4,
-  },
-  statIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  statLabelLight: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  statMainValue: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: -0.5,
-    marginTop: 2,
-  },
-  statSub: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
-    marginTop: 4,
-  },
-  statColumnRight: {
-    flex: 1,
-    gap: 12,
-  },
-  statCardSmall: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 12,
-    alignItems: 'flex-start',
-    gap: 4,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-  },
-  statSmallValue: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#fff',
-  },
-  statSmallLabel: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: theme.colors.text,
-    marginBottom: 12,
-    letterSpacing: -0.2,
-  },
-  quickActionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 18,
-    marginBottom: 10,
-    gap: 12,
-    elevation: 6,
-    shadowColor: '#0F2417',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-  },
-  quickActionCard2: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 18,
-    marginBottom: 20,
-    gap: 12,
-    backgroundColor: '#fff',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-  },
-  quickActionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quickActionIcon2: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quickActionContent: {
-    flex: 1,
-  },
-  quickActionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  quickActionSub: {
-    fontSize: 12,
-    color: theme.colors.gray,
-    marginTop: 2,
-  },
-  badge: {
-    backgroundColor: '#FF4444',
-    borderRadius: 12,
-    minWidth: 26,
-    height: 26,
-    paddingHorizontal: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  emptyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  emptyEmoji: {
-    fontSize: 36,
-  },
-  emptyText: {
-    color: theme.colors.gray,
-    fontSize: 14,
-  },
-  taxasList: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    marginBottom: 20,
-  },
-  taxaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F4F1',
-    gap: 12,
-  },
-  taxaIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#FFF3E0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  taxaInfo: {
-    flex: 1,
-  },
-  taxaPassenger: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  taxaRoute: {
-    fontSize: 12,
-    color: theme.colors.gray,
-    marginTop: 2,
-  },
-  taxaValue: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: theme.colors.secondary,
-  },
+  taxaLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+  taxaIconBg: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(74,222,128,0.1)', justifyContent: 'center', alignItems: 'center' },
+  taxaPassenger: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  taxaRoute: { color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 2 },
+  taxaValue: { color: '#4ADE80', fontSize: 16, fontWeight: '800' },
+  taxaDate: { color: 'rgba(255,255,255,0.2)', fontSize: 10, marginTop: 2 },
+
+  emptyCard: { padding: 40, alignItems: 'center', gap: 12 },
+  emptyText: { color: 'rgba(255,255,255,0.2)', fontSize: 14, fontWeight: '600' },
+
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 40, paddingBottom: 20 },
+  logoutText: { color: 'rgba(255,255,255,0.3)', fontSize: 14, fontWeight: '700' },
 });

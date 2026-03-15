@@ -6,6 +6,7 @@ interface User {
   id: number;
   nome: string;
   status?: string;
+  originalProfile?: UserRole;
 }
 
 interface RoleContextType {

@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Animated, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
-import { User, Shield, Briefcase, ChevronRight, LogOut, Settings } from 'lucide-react-native';
+import { User, Shield, Briefcase, ChevronRight, LogOut, Star } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRole, UserRole } from '../../context/RoleContext';
 import { theme } from '../../constants/theme';
@@ -9,13 +9,18 @@ import { theme } from '../../constants/theme';
 export default function ProfileScreen() {
   const { role, setRole, user, setUser } = useRole();
   const router = useRouter();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
+    ]).start();
+  }, []);
 
   const RoleOption = ({ targetRole, label, icon: Icon, description, gradient }: {
-    targetRole: UserRole;
-    label: string;
-    icon: any;
-    description: string;
-    gradient: [string, string];
+    targetRole: UserRole; label: string; icon: any; description: string; gradient: [string, string];
   }) => {
     const isActive = role === targetRole;
     return (
@@ -25,17 +30,19 @@ export default function ProfileScreen() {
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={isActive ? gradient : ['#F5F7F6', '#EAEEED']}
+          colors={isActive ? gradient : ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
           style={styles.roleIconWrapper}
         >
-          <Icon size={22} color={isActive ? '#fff' : theme.colors.gray} />
+          <Icon size={22} color={isActive ? '#fff' : 'rgba(255,255,255,0.4)'} />
         </LinearGradient>
         <View style={styles.roleTextContainer}>
           <Text style={[styles.roleLabel, isActive && styles.activeRoleLabel]}>{label}</Text>
           <Text style={styles.roleDescription}>{description}</Text>
         </View>
         {isActive && (
-          <View style={styles.activeDot} />
+          <LinearGradient colors={['#E67E22', '#D35400']} style={styles.activeDot}>
+            <Star size={10} color="#fff" />
+          </LinearGradient>
         )}
       </TouchableOpacity>
     );
@@ -45,289 +52,211 @@ export default function ProfileScreen() {
     ? user.nome.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
     : 'U';
 
+  const handleLogout = () => {
+    setRole('passenger');
+    setUser(null);
+    router.replace('/login');
+  };
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#0A1A0D" />
+      <LinearGradient colors={['#0A1A0D', '#0F2417', '#1B3A20']} style={StyleSheet.absoluteFill} />
 
-      {/* Profile Header */}
-      <LinearGradient
-        colors={['#0F2417', '#1B3A20', '#2D5A27']}
-        style={styles.header}
-      >
-        <View style={styles.avatarContainer}>
-          <LinearGradient
-            colors={['#E67E22', '#D35400']}
-            style={styles.avatar}
-          >
-            <Text style={styles.avatarText}>{initials}</Text>
-          </LinearGradient>
-          <View style={styles.avatarBadge}>
-            <Text style={styles.avatarBadgeText}>
-              {role === 'driver' ? '🚗' : role === 'admin' ? '⚙️' : '🧭'}
+      {/* Decorative orb */}
+      <View style={styles.orb1} />
+      <View style={styles.orb2} />
+
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+
+          {/* Header */}
+          <View style={styles.header}>
+            <Image
+              source={require('../../assets/images/divide_logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+
+            {/* Avatar */}
+            <LinearGradient colors={['#E67E22', '#D35400']} style={styles.avatar}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </LinearGradient>
+
+            <Text style={styles.userName}>{user?.nome || 'Usuário'}</Text>
+            <Text style={styles.userRole}>
+              {role === 'driver' ? '🚗 Motorista' : role === 'admin' ? '⚙️ Administrador' : '🧭 Passageiro'} · Divide SC
             </Text>
+
+            {/* Stats pills */}
+            <View style={styles.statsPills}>
+              <View style={styles.pill}>
+                <Text style={styles.pillEmoji}>🌲</Text>
+                <Text style={styles.pillText}>Santa Catarina</Text>
+              </View>
+              <View style={styles.pill}>
+                <Text style={styles.pillEmoji}>✅</Text>
+                <Text style={styles.pillText}>{user?.status === 'aprovado' ? 'Aprovado' : 'Verificado'}</Text>
+              </View>
+            </View>
           </View>
-        </View>
-        <Text style={styles.userName}>{user?.nome || 'Usuário'}</Text>
-        <Text style={styles.userRole}>
-          {role === 'driver' ? 'Motorista' : role === 'admin' ? 'Administrador' : 'Passageiro'} · Divide SC
-        </Text>
-        <Image
-          source={require('../../assets/images/divide_logo.png')}
-          style={styles.logoSmall}
-          resizeMode="contain"
-        />
-      </LinearGradient>
 
-      {/* Role Switch */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Alternar Modo de Uso</Text>
-        <RoleOption
-          targetRole="passenger"
-          label="Passageiro"
-          icon={User}
-          description="Buscar e reservar caronas em Santa Catarina."
-          gradient={['#2980B9', '#1A5276']}
-        />
-        <RoleOption
-          targetRole="driver"
-          label="Motorista"
-          icon={Briefcase}
-          description="Oferecer caronas e gerenciar suas rotas."
-          gradient={['#2D5A27', '#4A7C3A']}
-        />
-        {role === 'admin' && (
-          <RoleOption
-            targetRole="admin"
-            label="Administrador"
-            icon={Shield}
-            description="Acompanhar lucros e estatísticas da plataforma."
-            gradient={['#D4AF37', '#B8860B']}
-          />
-        )}
-      </View>
+          <View style={styles.content}>
 
-      {/* Settings */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Configurações</Text>
-        <View style={styles.settingsCard}>
-          <TouchableOpacity style={styles.settingItem}>
-            <View style={styles.settingIconWrapper}>
-              <User size={18} color={theme.colors.primary} />
+            {/* Role Switch */}
+            <Text style={styles.sectionTitle}>Trocar Modo de Uso</Text>
+            <View style={styles.glassSection}>
+              <RoleOption
+                targetRole="passenger"
+                label="Passageiro"
+                icon={User}
+                description="Buscar e reservar caronas"
+                gradient={['#2D5A27', '#4A7C3A']}
+              />
+              <View style={styles.sep} />
+              <RoleOption
+                targetRole="driver"
+                label="Motorista"
+                icon={Briefcase}
+                description="Oferecer caronas e ganhar"
+                gradient={['#E67E22', '#D35400']}
+              />
+              
+              {user?.originalProfile === 'admin' && (
+                <>
+                  <View style={styles.sep} />
+                  <RoleOption
+                    targetRole="admin"
+                    label="Administrador"
+                    icon={Shield}
+                    description="Painel de controle"
+                    gradient={['#D4AF37', '#B8860B']}
+                  />
+                </>
+              )}
             </View>
-            <Text style={styles.settingText}>Editar Perfil</Text>
-            <ChevronRight size={18} color={theme.colors.gray} />
-          </TouchableOpacity>
 
-          <View style={styles.settingDivider} />
+            {/* Menu Items */}
+            <Text style={styles.sectionTitle}>Conta</Text>
+            <View style={styles.glassSection}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(tabs)/trips')}>
+                <View style={[styles.menuIcon, { backgroundColor: 'rgba(46,90,39,0.3)' }]}>
+                  <Text style={styles.menuIconEmoji}>🗺️</Text>
+                </View>
+                <View style={styles.menuText}>
+                  <Text style={styles.menuTitle}>Minhas Reservas</Text>
+                  <Text style={styles.menuSub}>Ver histórico de viagens</Text>
+                </View>
+                <ChevronRight size={18} color="rgba(255,255,255,0.3)" />
+              </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
-            <View style={styles.settingIconWrapper}>
-              <Settings size={18} color={theme.colors.primary} />
+              <View style={styles.sep} />
+
+              <TouchableOpacity style={styles.menuItem}>
+                <View style={[styles.menuIcon, { backgroundColor: 'rgba(212,175,55,0.2)' }]}>
+                  <Text style={styles.menuIconEmoji}>⭐</Text>
+                </View>
+                <View style={styles.menuText}>
+                  <Text style={styles.menuTitle}>Avaliações</Text>
+                  <Text style={styles.menuSub}>Ver feedbacks recebidos</Text>
+                </View>
+                <ChevronRight size={18} color="rgba(255,255,255,0.3)" />
+              </TouchableOpacity>
             </View>
-            <Text style={styles.settingText}>Preferências</Text>
-            <ChevronRight size={18} color={theme.colors.gray} />
-          </TouchableOpacity>
 
-          <View style={styles.settingDivider} />
+            {/* Logout */}
+            <TouchableOpacity onPress={handleLogout} activeOpacity={0.85} style={styles.logoutWrap}>
+              <LinearGradient colors={['rgba(163,38,38,0.3)', 'rgba(163,38,38,0.15)']} style={styles.logoutBtn}>
+                <LogOut size={18} color="#FF6B6B" />
+                <Text style={styles.logoutText}>Sair da conta</Text>
+              </LinearGradient>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={() => {
-              setUser(null);
-              setRole('passenger');
-              router.replace('/login');
-            }}
-          >
-            <View style={[styles.settingIconWrapper, { backgroundColor: '#FFF0F0' }]}>
-              <LogOut size={18} color={theme.colors.error} />
-            </View>
-            <Text style={[styles.settingText, { color: theme.colors.error }]}>Sair da Conta</Text>
-            <ChevronRight size={18} color={theme.colors.error} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.footer}>
-        <Text style={styles.versionText}>Divide App · Santa Catarina</Text>
-        <Text style={styles.versionNum}>v2.0</Text>
-      </View>
-    </ScrollView>
+            <Text style={styles.versionText}>Divide v1.0 · 2025 · Todos os direitos reservados</Text>
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7F6',
+  root: { flex: 1, backgroundColor: '#0A1A0D' },
+  orb1: {
+    position: 'absolute', width: 300, height: 300, borderRadius: 150,
+    backgroundColor: 'rgba(46,90,39,0.2)', top: -100, right: -80,
   },
+  orb2: {
+    position: 'absolute', width: 180, height: 180, borderRadius: 90,
+    backgroundColor: 'rgba(230,126,34,0.1)', top: 200, left: -60,
+  },
+
+  // Header
   header: {
-    paddingTop: 60,
-    paddingBottom: 32,
-    alignItems: 'center',
-    position: 'relative',
+    alignItems: 'center', paddingTop: 60, paddingBottom: 32,
+    paddingHorizontal: 24, position: 'relative',
   },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 12,
-  },
+  logo: { width: 90, height: 45, opacity: 0.6, marginBottom: 24 },
   avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.3)',
+    width: 80, height: 80, borderRadius: 24, justifyContent: 'center', alignItems: 'center',
+    elevation: 10, shadowColor: '#E67E22', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5, shadowRadius: 16, marginBottom: 14,
   },
-  avatarText: {
-    color: '#fff',
-    fontSize: 30,
-    fontWeight: '800',
+  avatarText: { color: '#fff', fontSize: 28, fontWeight: '900' },
+  userName: { fontSize: 22, fontWeight: '900', color: '#fff', marginBottom: 4 },
+  userRole: { fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 20 },
+  statsPills: { flexDirection: 'row', gap: 10 },
+  pill: {
+    flexDirection: 'row', gap: 6, alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
   },
-  avatarBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: -4,
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  avatarBadgeText: {
-    fontSize: 14,
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: -0.3,
-  },
-  userRole: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.6)',
-    marginTop: 4,
-  },
-  logoSmall: {
-    width: 80,
-    height: 42,
-    opacity: 0.4,
-    marginTop: 16,
-  },
-  section: {
-    padding: 16,
-    paddingBottom: 0,
-  },
+  pillEmoji: { fontSize: 13 },
+  pillText: { color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600' },
+
+  // Content
+  content: { paddingHorizontal: 20, paddingBottom: 48 },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: theme.colors.text,
-    marginBottom: 12,
+    color: 'rgba(255,255,255,0.35)', fontSize: 11, fontWeight: '700', letterSpacing: 1.5,
+    textTransform: 'uppercase', marginBottom: 10, marginTop: 24, marginLeft: 4,
   },
+
+  // Glass sections
+  glassSection: {
+    backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', overflow: 'hidden',
+  },
+  sep: { height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 16 },
+
+  // Role cards
   roleCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 8,
-    borderWidth: 1.5,
-    borderColor: '#EAEEED',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
+    flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14,
   },
-  activeRoleCard: {
-    borderColor: theme.colors.primary,
-    backgroundColor: '#F0F7F1',
+  activeRoleCard: { backgroundColor: 'rgba(255,255,255,0.04)' },
+  roleIconWrapper: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  roleTextContainer: { flex: 1 },
+  roleLabel: { fontSize: 15, fontWeight: '700', color: 'rgba(255,255,255,0.5)', marginBottom: 2 },
+  activeRoleLabel: { color: '#fff' },
+  roleDescription: { fontSize: 12, color: 'rgba(255,255,255,0.3)' },
+  activeDot: { width: 24, height: 24, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+
+  // Menu
+  menuItem: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
+  menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  menuIconEmoji: { fontSize: 18 },
+  menuText: { flex: 1 },
+  menuTitle: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2 },
+  menuSub: { fontSize: 12, color: 'rgba(255,255,255,0.35)' },
+
+  // Logout
+  logoutWrap: { marginTop: 24 },
+  logoutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    borderRadius: 16, paddingVertical: 16, borderWidth: 1, borderColor: 'rgba(163,38,38,0.3)',
   },
-  roleIconWrapper: {
-    width: 46,
-    height: 46,
-    borderRadius: 13,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  roleTextContainer: {
-    flex: 1,
-  },
-  roleLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  activeRoleLabel: {
-    color: theme.colors.primary,
-  },
-  roleDescription: {
-    fontSize: 12,
-    color: theme.colors.gray,
-    marginTop: 2,
-    lineHeight: 16,
-  },
-  activeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: theme.colors.primary,
-    marginLeft: 8,
-  },
-  settingsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  settingIconWrapper: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  settingText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  settingDivider: {
-    height: 1,
-    backgroundColor: '#F0F4F1',
-    marginHorizontal: 16,
-  },
-  footer: {
-    alignItems: 'center',
-    padding: 24,
-    marginTop: 8,
-  },
+  logoutText: { color: '#FF6B6B', fontSize: 15, fontWeight: '700' },
+
   versionText: {
-    fontSize: 13,
-    color: theme.colors.gray,
-    fontWeight: '500',
-  },
-  versionNum: {
-    fontSize: 11,
-    color: '#C0C8C2',
-    marginTop: 2,
+    textAlign: 'center', color: 'rgba(255,255,255,0.15)', fontSize: 11, marginTop: 32, marginBottom: 8,
   },
 });
